@@ -47,7 +47,6 @@
             color: white; border-radius: 12px; font-size: 14px; outline: none; cursor: pointer;
         }
 
-        /* Стильный тумблер (флажок) */
         .switch-container { display: flex; align-items: center; justify-content: space-between; }
         .switch-label { font-size: 14px; color: #e5e7eb; }
         .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
@@ -75,7 +74,6 @@
 
         <div class="panel" id="controlPanel">
             
-            <!-- Ультра-тонкая чувствительность микрофона -->
             <div class="card">
                 <h3><i class="fa-solid fa-microphone"></i> Калибровка микрофона (Шумодав)</h3>
                 <div class="range-container">
@@ -84,7 +82,6 @@
                 </div>
             </div>
 
-            <!-- Галочка (Тумблер) для падающего пика -->
             <div class="card">
                 <div class="switch-container">
                     <span class="switch-label"><i class="fa-solid fa-arrows-down-to-line" style="color:#a855f7; margin-right:6px;"></i> Эффект удержания пика (Peak Hold)</span>
@@ -95,7 +92,6 @@
                 </div>
             </div>
 
-            <!-- Кастомизация цветов цветомузыки -->
             <div class="card">
                 <h3><i class="fa-solid fa-palette"></i> Цвета цветомузыки</h3>
                 <select onchange="sendParam('C', this.value)">
@@ -105,7 +101,6 @@
                 </select>
             </div>
 
-            <!-- Настройки Радуги -->
             <div class="card">
                 <h3><i class="fa-solid fa-rainbow"></i> Палитра Радуги</h3>
                 <select onchange="sendParam('P', this.value)">
@@ -115,7 +110,6 @@
                 </select>
             </div>
 
-            <!-- Скорость эффектов -->
             <div class="card">
                 <h3><i class="fa-solid fa-gauge-high"></i> Скорость эффектов</h3>
                 <div class="range-container">
@@ -124,7 +118,6 @@
                 </div>
             </div>
 
-            <!-- Кнопки режимов -->
             <div class="card">
                 <h3><i class="fa-solid fa-circle-play"></i> Выбор режима</h3>
                 <div class="grid">
@@ -165,365 +158,6 @@
                 document.getElementById('controlPanel').style.display = 'block';
             } catch (error) {
                 alert("Ошибка соединения: " + error);
-            }
-        }
-
-        async function sendCommand(cmd) {
-            if (!txCharacteristic) return;
-            const encoder = new TextEncoder();
-            await txCharacteristic.writeValueWithoutResponse(encoder.encode(cmd));
-        }
-
-        function sendParam(prefix, val) {
-            sendCommand(prefix + val);
-        }
-
-        function updateRange(id, val) {
-            document.getElementById(id).innerText = val;
-        }
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro LED Studio v2</title>
-    <link rel="stylesheet" href="https://cloudflare.com">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            background: linear-gradient(135deg, #070a12 0%, #0f172a 100%); 
-            color: #f3f4f6; text-align: center; min-height: 100vh; padding: 20px; 
-        }
-        .container {
-            max-width: 480px; margin: 0 auto; background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px;
-            padding: 25px 15px; backdrop-filter: blur(15px); box-shadow: 0 25px 50px rgba(0,0,0,0.6);
-        }
-        h1 { font-size: 26px; font-weight: 700; background: linear-gradient(to right, #38bdf8, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
-        .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 25px; }
-        
-        .btn { 
-            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; padding: 16px; font-size: 15px; border: none; border-radius: 16px; 
-            cursor: pointer; transition: all 0.2s ease; font-weight: 600; text-transform: uppercase;
-        }
-        .btn-connect { background: #10b981; color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
-        
-        .panel { display: none; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.04); border-radius: 18px; padding: 18px; 
-            margin-bottom: 16px; text-align: left; border: 1px solid rgba(255, 255, 255, 0.04);
-        }
-        .card h3 { font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        
-        .range-container { display: flex; align-items: center; gap: 12px; }
-        .range-val { font-size: 13px; font-weight: 600; color: #38bdf8; min-width: 35px; text-align: right; }
-        
-        input[type="range"] { width: 100%; height: 6px; background: #1f2937; border-radius: 6px; outline: none; -webkit-appearance: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #38bdf8; cursor: pointer; }
-
-        select {
-            width: 100%; padding: 12px; background: #1f2937; border: 1px solid #374151;
-            color: white; border-radius: 12px; font-size: 14px; outline: none; cursor: pointer;
-        }
-
-        /* Стильный тумблер (флажок) */
-        .switch-container { display: flex; align-items: center; justify-content: space-between; }
-        .switch-label { font-size: 14px; color: #e5e7eb; }
-        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .3s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background-color: #a855f7; }
-        input:checked + .slider:before { transform: translateX(22px); }
-
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-effect { background: #374151; color: #f3f4f6; font-size: 14px; padding: 12px; border-radius: 12px; }
-        .btn-music { background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%); color: white; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); }
-        .btn-off { background: #ef4444; color: white; grid-column: span 2; }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <h1><i class="fa-solid fa-sliders"></i> Pro LED Studio</h1>
-        <p class="subtitle">Умная аудио-визуализация на ESP32-S3</p>
-        
-        <button class="btn btn-connect" id="connectBtn" onclick="connectBLE()">
-            <i class="fa-solid fa-plug"></i> Синхронизировать пульт
-        </button>
-
-        <div class="panel" id="controlPanel">
-            
-            <!-- Ультра-тонкая чувствительность микрофона -->
-            <div class="card">
-                <h3><i class="fa-solid fa-microphone"></i> Калибровка микрофона (Шумодав)</h3>
-                <div class="range-container">
-                    <input type="range" min="1" max="100" value="50" oninput="updateRange('micVal', this.value); sendParam('M', this.value)">
-                    <span class="range-val" id="micVal">50</span>
-                </div>
-            </div>
-
-            <!-- Галочка (Тумблер) для падающего пика -->
-            <div class="card">
-                <div class="switch-container">
-                    <span class="switch-label"><i class="fa-solid fa-arrows-down-to-line" style="color:#a855f7; margin-right:6px;"></i> Эффект удержания пика (Peak Hold)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="peakCheck" checked onchange="sendParam('K', this.checked ? '1' : '0')">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Кастомизация цветов цветомузыки -->
-            <div class="card">
-                <h3><i class="fa-solid fa-palette"></i> Цвета цветомузыки</h3>
-                <select onchange="sendParam('C', this.value)">
-                    <option value="1">🟢🟡🔴 Классический (Зеленый-Желтый-Красный)</option>
-                    <option value="2">🔵🌐🟣 Неоновый киберпанк (Синий-Розовый)</option>
-                    <option value="3">🔴🟠🟡 Раскаленный огонь (Красный-Желтый)</option>
-                </select>
-            </div>
-
-            <!-- Настройки Радуги -->
-            <div class="card">
-                <h3><i class="fa-solid fa-rainbow"></i> Палитра Радуги</h3>
-                <select onchange="sendParam('P', this.value)">
-                    <option value="0">Стандартный спектр</option>
-                    <option value="1">Кислотный градиент</option>
-                    <option value="2">Мягкий неоновый (Морской)</option>
-                </select>
-            </div>
-
-            <!-- Скорость эффектов -->
-            <div class="card">
-                <h3><i class="fa-solid fa-gauge-high"></i> Скорость эффектов</h3>
-                <div class="range-container">
-                    <input type="range" min="1" max="100" value="30" oninput="updateRange('speedVal', this.value); sendParam('S', this.value)">
-                    <span class="range-val" id="speedVal">30</span>
-                </div>
-            </div>
-
-            <!-- Кнопки режимов -->
-            <div class="card">
-                <h3><i class="fa-solid fa-circle-play"></i> Выбор режима</h3>
-                <div class="grid">
-                    <button class="btn btn-effect btn-music" onclick="sendCommand('sound')">
-                        <i class="fa-solid fa-bolt"></i> Цветомузыка
-                    </button>
-                    <button class="btn btn-effect" onclick="sendCommand('rainbow')">
-                        <i class="fa-solid fa-rainbow"></i> Радуга
-                    </button>
-                    <button class="btn btn-effect" onclick="sendCommand('fire')">
-                        <i class="fa-solid fa-fire"></i> Огонь
-                    </button>
-                    <button class="btn btn-effect btn-off" onclick="sendCommand('off')">
-                        <i class="fa-solid fa-power-off"></i> Отключить
-                    </button>
-                </div>
-            </div>
-            
-        </div>
-    </div>
-
-    <script>
-        const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-        const CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
-        let txCharacteristic = null;
-
-        async function connectBLE() {
-            try {
-                const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'ESP32-S3_Controller' }],
-                    optionalServices: [SERVICE_UUID]
-                });
-                const server = await device.gatt.connect();
-                const service = await server.getPrimaryService(SERVICE_UUID);
-                txCharacteristic = await service.getCharacteristic(CHAR_UUID);
-                
-                document.getElementById('connectBtn').style.display = 'none';
-                document.getElementById('controlPanel').style.display = 'block';
-            } catch (error) {
-                alert("Ошибка соединения: " + error);
-            }
-        }
-
-        async function sendCommand(cmd) {
-            if (!txCharacteristic) return;
-            const encoder = new TextEncoder();
-            await txCharacteristic.writeValueWithoutResponse(encoder.encode(cmd));
-        }
-
-        function sendParam(prefix, val) {
-            sendCommand(prefix + val);
-        }
-
-        function updateRange(id, val) {
-            document.getElementById(id).innerText = val;
-        }
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro LED Studio</title>
-    <link rel="stylesheet" href="https://cloudflare.com">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            background: linear-gradient(135deg, #090d16 0%, #111827 100%); 
-            color: #f3f4f6; text-align: center; min-height: 100vh; padding: 20px; 
-        }
-        .container {
-            max-width: 480px; margin: 0 auto; background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px;
-            padding: 25px 15px; backdrop-filter: blur(15px); box-shadow: 0 25px 50px rgba(0,0,0,0.6);
-        }
-        h1 { font-size: 28px; font-weight: 700; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
-        .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 25px; }
-        
-        .btn { 
-            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; padding: 16px; font-size: 15px; border: none; border-radius: 16px; 
-            cursor: pointer; transition: all 0.2s ease; font-weight: 600; text-transform: uppercase;
-        }
-        .btn-connect { background: #10b981; color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
-        .btn-connect:hover { background: #059669; }
-        
-        .panel { display: none; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.04); border-radius: 18px; padding: 18px; 
-            margin-bottom: 16px; text-align: left; border: 1px solid rgba(255, 255, 255, 0.04);
-        }
-        .card h3 { font-size: 13px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        
-        .range-container { display: flex; align-items: center; gap: 12px; }
-        .range-val { font-size: 14px; font-weight: 600; color: #38bdf8; min-width: 30px; text-align: right; }
-        
-        input[type="range"] { width: 100%; height: 6px; background: #1f2937; border-radius: 6px; outline: none; -webkit-appearance: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #38bdf8; cursor: pointer; }
-
-        .color-wrapper { display: flex; align-items: center; gap: 15px; }
-        input[type="color"] { -webkit-appearance: none; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; background: none; }
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
-
-        /* Выпадающий список палитр */
-        select {
-            width: 100%; padding: 12px; background: #1f2937; border: 1px solid #374151;
-            color: white; border-radius: 12px; font-size: 14px; outline: none; cursor: pointer;
-        }
-
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-effect { background: #374151; color: #f3f4f6; font-size: 14px; padding: 12px; border-radius: 12px; }
-        .btn-effect:hover { background: #4b5563; }
-        .btn-music { background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-        .btn-music:hover { opacity: 0.9; }
-        .btn-off { background: #ef4444; color: white; grid-column: span 2; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <h1><i class="fa-solid fa-music"></i> Pro LED Studio</h1>
-        <p class="subtitle">Цветомузыкальная система на ESP32-S3</p>
-        
-        <button class="btn btn-connect" id="connectBtn" onclick="connectBLE()">
-            <i class="fa-solid fa-wave-square"></i> Начать синхронизацию
-        </button>
-
-        <div class="panel" id="controlPanel">
-            
-            <!-- Громкость / Чувствительность звука -->
-            <div class="card">
-                <h3><i class="fa-solid fa-microphone-lines"></i> Чувствительность микрофона</h3>
-                <div class="range-container">
-                    <input type="range" min="1" max="100" value="50" oninput="updateRange('micVal', this.value); sendParam('M', this.value)">
-                    <span class="range-val" id="micVal">50</span>
-                </div>
-            </div>
-
-            <!-- Скорость эффектов -->
-            <div class="card">
-                <h3><i class="fa-solid fa-gauge-high"></i> Скорость анимации</h3>
-                <div class="range-container">
-                    <input type="range" min="1" max="100" value="30" oninput="updateRange('speedVal', this.value); sendParam('S', this.value)">
-                    <span class="range-val" id="speedVal">30</span>
-                </div>
-            </div>
-
-            <!-- Настройки Радуги -->
-            <div class="card">
-                <h3><i class="fa-solid fa-palette"></i> Палитра эффекта Радуга</h3>
-                <select onchange="sendParam('P', this.value)">
-                    <option value="0">Стандартная спектральная</option>
-                    <option value="1">Кислотный градиент (Крупный)</option>
-                    <option value="2">Мягкий неоновый (Морской)</option>
-                </select>
-            </div>
-
-            <!-- Статический цвет -->
-            <div class="card">
-                <h3><i class="fa-solid fa-brush"></i> Постоянный цвет</h3>
-                <div class="color-wrapper">
-                    <input type="color" value="#00ff99" oninput="document.getElementById('cHex').innerText = this.value.toUpperCase(); sendCommand(this.value)">
-                    <span id="cHex" style="font-weight:600;">#00FF99</span>
-                </div>
-            </div>
-
-            <!-- Сетка режимов -->
-            <div class="card">
-                <h3><i class="fa-solid fa-sliders"></i> Выбор режима</h3>
-                <div class="grid">
-                    <button class="btn btn-effect btn-music" onclick="sendCommand('sound')">
-                        <i class="fa-solid fa-bolt"></i> Цветомузыка
-                    </button>
-                    <button class="btn btn-effect" onclick="sendCommand('rainbow')">
-                        <i class="fa-solid fa-rainbow"></i> Радуга
-                    </button>
-                    <button class="btn btn-effect" onclick="sendCommand('fire')">
-                        <i class="fa-solid fa-fire"></i> Огонь
-                    </button>
-                    <button class="btn btn-effect btn-off" onclick="sendCommand('off')">
-                        <i class="fa-solid fa-power-off"></i> Выключить всё
-                    </button>
-                </div>
-            </div>
-            
-        </div>
-    </div>
-
-    <script>
-        const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-        const CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
-        let txCharacteristic = null;
-
-        async function connectBLE() {
-            try {
-                const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'ESP32-S3_Controller' }],
-                    optionalServices: [SERVICE_UUID]
-                });
-                const server = await device.gatt.connect();
-                const service = await server.getPrimaryService(SERVICE_UUID);
-                txCharacteristic = await service.getCharacteristic(CHAR_UUID);
-                
-                document.getElementById('connectBtn').style.display = 'none';
-                document.getElementById('controlPanel').style.display = 'block';
-            } catch (error) {
-                alert("Ошибка: " + error);
             }
         }
 
