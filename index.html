@@ -3,123 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 LED Controller</title>
-    <!-- Подключаем шрифты и иконки Font Awesome -->
+    <title>Pro LED Studio</title>
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); 
-            color: #f8fafc; 
-            text-align: center; 
-            min-height: 100vh;
-            padding: 20px; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: linear-gradient(135deg, #090d16 0%, #111827 100%); 
+            color: #f3f4f6; text-align: center; min-height: 100vh; padding: 20px; 
         }
         .container {
-            max-width: 450px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 30px 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            max-width: 480px; margin: 0 auto; background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 28px;
+            padding: 25px 15px; backdrop-filter: blur(15px); box-shadow: 0 25px 50px rgba(0,0,0,0.6);
         }
-        h1 { font-size: 26px; margin-bottom: 5px; font-weight: 600; color: #fff; }
-        .subtitle { font-size: 14px; color: #94a3b8; margin-bottom: 30px; }
+        h1 { font-size: 28px; font-weight: 700; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 25px; }
         
-        /* Кнопки */
         .btn { 
             display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; padding: 16px; font-size: 16px; border: none; border-radius: 16px; 
+            width: 100%; padding: 16px; font-size: 15px; border: none; border-radius: 16px; 
             cursor: pointer; transition: all 0.2s ease; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
-        .btn i { font-size: 18px; }
-        .btn-connect { background: #10b981; color: #fff; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); }
+        .btn-connect { background: #10b981; color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
         .btn-connect:hover { background: #059669; }
         
-        /* Панель управления */
-        .panel { display: none; animation: fadeIn 0.4s ease forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .panel { display: none; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
         .card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: left;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04); border-radius: 18px; padding: 18px; 
+            margin-bottom: 16px; text-align: left; border: 1px solid rgba(255, 255, 255, 0.04);
         }
-        .card h3 { font-size: 14px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .card h3 { font-size: 13px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
         
-        /* Кастомный выбор цвета */
+        .range-container { display: flex; align-items: center; gap: 12px; }
+        .range-val { font-size: 14px; font-weight: 600; color: #38bdf8; min-width: 30px; text-align: right; }
+        
+        input[type="range"] { width: 100%; height: 6px; background: #1f2937; border-radius: 6px; outline: none; -webkit-appearance: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #38bdf8; cursor: pointer; }
+
         .color-wrapper { display: flex; align-items: center; gap: 15px; }
-        input[type="color"] { 
-            -webkit-appearance: none; border: none; width: 60px; height: 60px; 
-            border-radius: 50%; cursor: pointer; background: none; box-shadow: 0 0 15px rgba(255,255,255,0.1);
-        }
+        input[type="color"] { -webkit-appearance: none; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; background: none; }
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
-        .color-text { font-size: 16px; font-weight: 500; color: #e2e8f0; }
 
-        /* Ползунок яркости */
-        input[type="range"] { 
-            width: 100%; height: 6px; background: #334155; border-radius: 5px; 
-            outline: none; -webkit-appearance: none; margin-top: 10px;
-        }
-        input[type="range"]::-webkit-slider-thumb { 
-            -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; 
-            background: #38bdf8; cursor: pointer; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        /* Выпадающий список палитр */
+        select {
+            width: 100%; padding: 12px; background: #1f2937; border: 1px solid #374151;
+            color: white; border-radius: 12px; font-size: 14px; outline: none; cursor: pointer;
         }
 
-        /* Сетка для эффектов */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .btn-effect { background: #334155; color: #f8fafc; font-size: 14px; padding: 12px; border-radius: 12px; }
-        .btn-effect:hover { background: #475569; }
-        .btn-off { background: #ef4444; color: white; grid-column: span 2; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3); }
-        .btn-off:hover { background: #dc2626; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-effect { background: #374151; color: #f3f4f6; font-size: 14px; padding: 12px; border-radius: 12px; }
+        .btn-effect:hover { background: #4b5563; }
+        .btn-music { background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+        .btn-music:hover { opacity: 0.9; }
+        .btn-off { background: #ef4444; color: white; grid-column: span 2; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1><i class="fa-solid fa-wand-magic-sparkles" style="color: #38bdf8;"></i> Smart LED</h1>
-        <p class="subtitle">Управление адресной лентой по BLE</p>
+        <h1><i class="fa-solid fa-music"></i> Pro LED Studio</h1>
+        <p class="subtitle">Цветомузыкальная система на ESP32-S3</p>
         
-        <!-- Кнопка подключения -->
         <button class="btn btn-connect" id="connectBtn" onclick="connectBLE()">
-            <i class="fa-solid fa-bluetooth"></i> Подключиться
+            <i class="fa-solid fa-wave-square"></i> Начать синхронизацию
         </button>
 
-        <!-- Интерфейс пульта -->
         <div class="panel" id="controlPanel">
             
-            <!-- Карточка цвета -->
+            <!-- Громкость / Чувствительность звука -->
             <div class="card">
-                <h3><i class="fa-solid fa-palette"></i> Палитра цветов</h3>
-                <div class="color-wrapper">
-                    <input type="color" id="colorPicker" value="#00ff99" oninput="sendColor(this.value)">
-                    <span class="color-text" id="colorHex">#00ff99</span>
+                <h3><i class="fa-solid fa-microphone-lines"></i> Чувствительность микрофона</h3>
+                <div class="range-container">
+                    <input type="range" min="1" max="100" value="50" oninput="updateRange('micVal', this.value); sendParam('M', this.value)">
+                    <span class="range-val" id="micVal">50</span>
                 </div>
             </div>
 
-            <!-- Карточка яркости -->
+            <!-- Скорость эффектов -->
             <div class="card">
-                <h3><i class="fa-solid fa-sun"></i> Яркость</h3>
-                <input type="range" min="0" max="255" value="100" onchange="sendBrightness(this.value)">
+                <h3><i class="fa-solid fa-gauge-high"></i> Скорость анимации</h3>
+                <div class="range-container">
+                    <input type="range" min="1" max="100" value="30" oninput="updateRange('speedVal', this.value); sendParam('S', this.value)">
+                    <span class="range-val" id="speedVal">30</span>
+                </div>
             </div>
 
-            <!-- Карточка эффектов -->
+            <!-- Настройки Радуги -->
             <div class="card">
-                <h3><i class="fa-solid fa-wand-magic"></i> Режимы и эффекты</h3>
+                <h3><i class="fa-solid fa-palette"></i> Палитра эффекта Радуга</h3>
+                <select onchange="sendParam('P', this.value)">
+                    <option value="0">Стандартная спектральная</option>
+                    <option value="1">Кислотный градиент (Крупный)</option>
+                    <option value="2">Мягкий неоновый (Морской)</option>
+                </select>
+            </div>
+
+            <!-- Статический цвет -->
+            <div class="card">
+                <h3><i class="fa-solid fa-brush"></i> Постоянный цвет</h3>
+                <div class="color-wrapper">
+                    <input type="color" value="#00ff99" oninput="document.getElementById('cHex').innerText = this.value.toUpperCase(); sendCommand(this.value)">
+                    <span id="cHex" style="font-weight:600;">#00FF99</span>
+                </div>
+            </div>
+
+            <!-- Сетка режимов -->
+            <div class="card">
+                <h3><i class="fa-solid fa-sliders"></i> Выбор режима</h3>
                 <div class="grid">
+                    <button class="btn btn-effect btn-music" onclick="sendCommand('sound')">
+                        <i class="fa-solid fa-bolt"></i> Цветомузыка
+                    </button>
                     <button class="btn btn-effect" onclick="sendCommand('rainbow')">
-                        <i class="fa-solid fa-rainbow" style="color: #ff70a6;"></i> Радуга
+                        <i class="fa-solid fa-rainbow"></i> Радуга
                     </button>
                     <button class="btn btn-effect" onclick="sendCommand('fire')">
-                        <i class="fa-solid fa-fire" style="color: #ff9770;"></i> Огонь
+                        <i class="fa-solid fa-fire"></i> Огонь
                     </button>
-                    <button class="btn btn-off" onclick="sendCommand('off')">
-                        <i class="fa-solid fa-power-off"></i> Выключить ленту
+                    <button class="btn btn-effect btn-off" onclick="sendCommand('off')">
+                        <i class="fa-solid fa-power-off"></i> Выключить всё
                     </button>
                 </div>
             </div>
@@ -145,7 +151,7 @@
                 document.getElementById('connectBtn').style.display = 'none';
                 document.getElementById('controlPanel').style.display = 'block';
             } catch (error) {
-                alert("Не удалось подключиться: " + error);
+                alert("Ошибка: " + error);
             }
         }
 
@@ -155,13 +161,12 @@
             await txCharacteristic.writeValueWithoutResponse(encoder.encode(cmd));
         }
 
-        function sendColor(hex) {
-            document.getElementById('colorHex').innerText = hex.toUpperCase();
-            sendCommand(hex);
+        function sendParam(prefix, val) {
+            sendCommand(prefix + val);
         }
 
-        function sendBrightness(val) {
-            sendCommand("B" + val);
+        function updateRange(id, val) {
+            document.getElementById(id).innerText = val;
         }
     </script>
 </body>
