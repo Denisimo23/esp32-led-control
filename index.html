@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 LED Controller</title>
+    <!-- Подключаем шрифты и иконки Font Awesome -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); 
+            color: #f8fafc; 
+            text-align: center; 
+            min-height: 100vh;
+            padding: 20px; 
+        }
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 30px 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        h1 { font-size: 26px; margin-bottom: 5px; font-weight: 600; color: #fff; }
+        .subtitle { font-size: 14px; color: #94a3b8; margin-bottom: 30px; }
+        
+        /* Кнопки */
+        .btn { 
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 16px; font-size: 16px; border: none; border-radius: 16px; 
+            cursor: pointer; transition: all 0.2s ease; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn i { font-size: 18px; }
+        .btn-connect { background: #10b981; color: #fff; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); }
+        .btn-connect:hover { background: #059669; }
+        
+        /* Панель управления */
+        .panel { display: none; animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .card h3 { font-size: 14px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        /* Кастомный выбор цвета */
+        .color-wrapper { display: flex; align-items: center; gap: 15px; }
+        input[type="color"] { 
+            -webkit-appearance: none; border: none; width: 60px; height: 60px; 
+            border-radius: 50%; cursor: pointer; background: none; box-shadow: 0 0 15px rgba(255,255,255,0.1);
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+        .color-text { font-size: 16px; font-weight: 500; color: #e2e8f0; }
+
+        /* Ползунок яркости */
+        input[type="range"] { 
+            width: 100%; height: 6px; background: #334155; border-radius: 5px; 
+            outline: none; -webkit-appearance: none; margin-top: 10px;
+        }
+        input[type="range"]::-webkit-slider-thumb { 
+            -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; 
+            background: #38bdf8; cursor: pointer; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        /* Сетка для эффектов */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn-effect { background: #334155; color: #f8fafc; font-size: 14px; padding: 12px; border-radius: 12px; }
+        .btn-effect:hover { background: #475569; }
+        .btn-off { background: #ef4444; color: white; grid-column: span 2; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3); }
+        .btn-off:hover { background: #dc2626; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1><i class="fa-solid fa-wand-magic-sparkles" style="color: #38bdf8;"></i> Smart LED</h1>
+        <p class="subtitle">Управление адресной лентой по BLE</p>
+        
+        <!-- Кнопка подключения -->
+        <button class="btn btn-connect" id="connectBtn" onclick="connectBLE()">
+            <i class="fa-solid fa-bluetooth"></i> Подключиться
+        </button>
+
+        <!-- Интерфейс пульта -->
+        <div class="panel" id="controlPanel">
+            
+            <!-- Карточка цвета -->
+            <div class="card">
+                <h3><i class="fa-solid fa-palette"></i> Палитра цветов</h3>
+                <div class="color-wrapper">
+                    <input type="color" id="colorPicker" value="#00ff99" oninput="sendColor(this.value)">
+                    <span class="color-text" id="colorHex">#00ff99</span>
+                </div>
+            </div>
+
+            <!-- Карточка яркости -->
+            <div class="card">
+                <h3><i class="fa-solid fa-sun"></i> Яркость</h3>
+                <input type="range" min="0" max="255" value="100" onchange="sendBrightness(this.value)">
+            </div>
+
+            <!-- Карточка эффектов -->
+            <div class="card">
+                <h3><i class="fa-solid fa-wand-magic"></i> Режимы и эффекты</h3>
+                <div class="grid">
+                    <button class="btn btn-effect" onclick="sendCommand('rainbow')">
+                        <i class="fa-solid fa-rainbow" style="color: #ff70a6;"></i> Радуга
+                    </button>
+                    <button class="btn btn-effect" onclick="sendCommand('fire')">
+                        <i class="fa-solid fa-fire" style="color: #ff9770;"></i> Огонь
+                    </button>
+                    <button class="btn btn-off" onclick="sendCommand('off')">
+                        <i class="fa-solid fa-power-off"></i> Выключить ленту
+                    </button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+        const CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+        let txCharacteristic = null;
+
+        async function connectBLE() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'ESP32-S3_Controller' }],
+                    optionalServices: [SERVICE_UUID]
+                });
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(SERVICE_UUID);
+                txCharacteristic = await service.getCharacteristic(CHAR_UUID);
+                
+                document.getElementById('connectBtn').style.display = 'none';
+                document.getElementById('controlPanel').style.display = 'block';
+            } catch (error) {
+                alert("Не удалось подключиться: " + error);
+            }
+        }
+
+        async function sendCommand(cmd) {
+            if (!txCharacteristic) return;
+            const encoder = new TextEncoder();
+            await txCharacteristic.writeValueWithoutResponse(encoder.encode(cmd));
+        }
+
+        function sendColor(hex) {
+            document.getElementById('colorHex').innerText = hex.toUpperCase();
+            sendCommand(hex);
+        }
+
+        function sendBrightness(val) {
+            sendCommand("B" + val);
+        }
+    </script>
+</body>
+</html>
