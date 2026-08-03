@@ -135,21 +135,17 @@
         const g = parseInt(hexColor.substr(3,2), 16);
         const b = parseInt(hexColor.substr(5,2), 16);
 
-        const data = {
-            mode: parseInt(document.getElementById('mode').value),
-            brightness: parseInt(document.getElementById('brightness').value),
-            sensitivity: parseInt(document.getElementById('sensitivity').value),
-            speed: parseInt(document.getElementById('speed').value),
-            r: r, g: g, b: b
-        };
-
-        const jsonString = JSON.stringify(data);
-        const encoder = new TextEncoder();
-        const buffer = encoder.encode(jsonString);
+        // Формируем плоский массив байт без использования JSON текстовых строк
+        const data = new Uint8Array([
+            parseInt(document.getElementById('mode').value),
+            parseInt(document.getElementById('brightness').value),
+            parseInt(document.getElementById('sensitivity').value),
+            parseInt(document.getElementById('speed').value),
+            r, g, b
+        ]);
 
         try {
-            // Отправляем массив байт по BLE
-            await bleCharacteristic.writeValue(buffer);
+            await bleCharacteristic.writeValue(data);
         } catch (error) {
             console.error("Ошибка отправки:", error);
         }
