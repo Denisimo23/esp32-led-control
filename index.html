@@ -3,148 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matrix LED OS Pro</title>
-    <link rel="stylesheet" href="https://cloudflare.com">
+    <title>Панель управления Светомузыкой</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0b0f19; color: #f3f4f6; padding: 15px; min-height: 100vh; }
-        .container { max-width: 480px; margin: 0 auto; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 20px 15px; backdrop-filter: blur(20px); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
-        .tabs { display: flex; background: #111827; border-radius: 14px; padding: 5px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; background: none; color: #9ca3af; font-weight: 600; font-size: 14px; cursor: pointer; border-radius: 10px; transition: 0.2s; }
-        .tab-btn.active { background: #1f2937; color: #38bdf8; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .card { background: rgba(255, 255, 255, 0.04); border-radius: 16px; padding: 16px; margin-bottom: 14px; text-align: left; }
-        .card h3 { font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; font-size: 15px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-transform: uppercase; }
-        .btn-connect { background: #10b981; color: #fff; }
-        .btn-save { background: #eab308; color: #000; margin-top: 10px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-effect { background: #1f2937; color: white; padding: 14px; border-radius: 12px; font-size: 14px; border: none; cursor: pointer; }
-        .btn-music { background: linear-gradient(135deg, #38bdf8, #6366f1); font-weight: bold; }
-        .btn-off { background: #ef4444; grid-column: span 2; font-weight: bold; }
-        input[type="range"] { width: 100%; height: 6px; background: #1f2937; border-radius: 6px; outline: none; -webkit-appearance: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #38bdf8; cursor: pointer; }
-        select { width: 100%; padding: 12px; background: #1f2937; border: 1px solid #374151; color: white; border-radius: 12px; outline: none; }
-        .color-constructor { display: flex; justify-content: space-between; gap: 8px; }
-        .color-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: #9ca3af; }
-        .color-slot input[type="color"] { -webkit-appearance: none; border: none; width: 45px; height: 45px; border-radius: 50%; background: none; cursor: pointer; }
-        .color-slot input[type="color"]::-webkit-color-swatch { border: 2px solid #374151; border-radius: 50%; }
-        .switch-container { display: flex; align-items: center; justify-content: space-between; }
-        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .2s; border-radius: 22px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
-        input:checked + .slider { background-color: #38bdf8; }
-        input:checked + .slider:before { transform: translateX(22px); }
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        h2 { text-align: center; color: #ffffff; font-weight: 400; margin-bottom: 20px; }
+        .section { margin-bottom: 20px; border-bottom: 1px solid #2d2d2d; padding-bottom: 15px; }
+        .section:last-child { border-bottom: none; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; color: #aaaaaa; }
+        input[type="range"], input[type="text"], select {
+            width: 100%;
+            box-sizing: border-box;
+            background: #2a2a2a;
+            border: 1px solid #3d3d3d;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        input[type="color"] {
+            width: 100%; height: 40px; border: none; background: transparent; cursor: pointer;
+        }
+        .status { text-align: center; font-size: 12px; margin-top: 10px; color: #ff5555; }
+        .connected { color: #55ff55; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2 style="margin-bottom:15px; font-weight:700;"><i class="fa-solid fa-circle-nodes" style="color:#38bdf8;"></i> Matrix LED OS</h2>
-        
-        <button class="btn btn-connect" id="connectBtn" onclick="connectBLE()"><i class="fa-solid fa-link"></i> Подключить пульт</button>
-
-        <div id="controlPanel" style="display:none;">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('controlTab', this)">Управление</button>
-                <button class="tab-btn" onclick="switchTab('settingsTab', this)">Настройки</button>
-            </div>
-
-            <!-- ВКЛАДКА 1: УПРАВЛЕНИЕ -->
-            <div id="controlTab" class="tab-content active">
-                <div class="card">
-                    <h3><i class="fa-solid fa-paint-brush"></i> Статичный цвет</h3>
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <input type="color" id="staticColor" value="#00ff99" oninput="sendDebouncedCommand(this.value)" style="-webkit-appearance:none; border:none; width:45px; height:45px; background:none; cursor:pointer;">
-                        <span>Включить постоянный свет</span>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h3><i class="fa-solid fa-play"></i> Выберите основной режим</h3>
-                    <div class="grid">
-                        <button class="btn btn-effect btn-music" onclick="sendCommand('sound')"><i class="fa-solid fa-bolt"></i> Цветомузыка</button>
-                        <button class="btn btn-effect" onclick="sendCommand('rainbow')"><i class="fa-solid fa-rainbow"></i> Радуга</button>
-                        <button class="btn btn-effect" onclick="sendCommand('fire')"><i class="fa-solid fa-fire"></i> Огонь</button>
-                        <button class="btn btn-effect btn-off" onclick="sendCommand('off')"><i class="fa-solid fa-power-off"></i> Выключить</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ВКЛАДКА 2: НАСТРОЙКИ -->
-            <div id="settingsTab" class="tab-content">
-                <div class="card">
-                    <h3><i class="fa-solid fa-microphone"></i> Калибровка шума микрофона</h3>
-                    <input type="range" min="1" max="100" value="50" oninput="sendDebouncedParam('M', this.value)">
-                </div>
-
-                <div class="card">
-                    <h3><i class="fa-solid fa-palette"></i> Конструктор градиента</h3>
-                    <div class="color-constructor">
-                        <div class="color-slot"><input type="color" value="#FF0000" onchange="sendCommand('CC0' + this.value)"><span>Цвет 1</span></div>
-                        <div class="color-slot"><input type="color" value="#00FF00" onchange="sendCommand('CC1' + this.value)"><span>Цвет 2</span></div>
-                        <div class="color-slot"><input type="color" value="#0000FF" onchange="sendCommand('CC2' + this.value)"><span>Цвет 3</span></div>
-                        <div class="color-slot"><input type="color" value="#FF00FF" onchange="sendCommand('CC3' + this.value)"><span>Цвет 4</span></div>
-                    </div>
-                </div>
-
-                <div class="grid" style="margin-bottom:14px;">
-                    <div class="card" style="margin:0;">
-                        <h3>Направление</h3>
-                        <select onchange="sendCommand('D' + this.value)">
-                            <option value="0">Снизу вверх</option>
-                            <option value="1">Из центра</option>
-                        </select>
-                    </div>
-                    <div class="card" style="margin:0;">
-                        <h3>Цвета музыки</h3>
-                        <select onchange="sendCommand('C' + this.value)">
-                            <option value="1">Классика</option>
-                            <option value="2">Неон</option>
-                            <option value="3">Пламя</option>
-                            <option value="4">Мой градиент</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h3><i class="fa-solid fa-rainbow"></i> Пресеты Радуги</h3>
-                    <select onchange="sendCommand('P' + this.value)">
-                        <option value="0">Классическая</option>
-                        <option value="1">Кислотная</option>
-                        <option value="2">Мягкая</option>
-                        <option value="3">Моя радуга</option>
-                    </select>
-                </div>
-
-                <div class="card">
-                    <div class="switch-container">
-                        <span>Удержание пика громкости</span>
-                        <label class="switch">
-                            <input type="checkbox" checked onchange="sendCommand('K' + (this.checked ? '1' : '0'))">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h3><i class="fa-solid fa-gauge"></i> Скорость анимации</h3>
-                    <input type="range" min="1" max="100" value="30" oninput="sendDebouncedParam('S', this.value)">
-                </div>
-
-                <button class="btn btn-save" onclick="sendCommand('save')"><i class="fa-solid fa-floppy-disk"></i> Сохранить настройки в плату</button>
-            </div>
-        </div>
+<div class="container">
+    <h2>Светомузыка ESP32</h2>
+    
+    <div class="section">
+        <label>IP адрес ESP32 (из монитора порта):</label>
+        <input type="text" id="ipAddress" value="111.111.111.111" onchange="connectIP()">
+        <div id="status" class="status">Дисконнект</div>
     </div>
 
-    <script>
-        const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-        const CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
-        let txCharacteristic = null;
-        let debounceTimer = null;
+    <div class="section">
+        <label>Режим анимации:</label>
+        <select id="mode" onchange="sendData()">
+            <option value="0">Статичный цвет</option>
+            <option value="1">Пульсация (Громкость)</option>
+            <option value="2">Бегущая волна из центра</option>
+            <option value="3">Динамическая радуга</option>
+        </select>
+    </div>
 
-        async function connectBLE() {
-try {const device = await navigator.bluetooth.requestDevice({filters: [{ name: 'ESP32-S3_Controller' }],optionalServices: [SERVICE_UUID]});const server = await device.gatt.connect();const service = await server.getPrimaryService(SERVICE_UUID);txCharacteristic = await service.getCharacteristic(CHAR_UUID);document.getElementById('connectBtn').style.display = 'none';document.getElementById('controlPanel').style.display = 'block';} catch (error) {alert("Ошибка подключения: " + error);}}async function sendCommand(cmd) {if (!txCharacteristic) return;try {await txCharacteristic.writeValueWithoutResponse((new TextEncoder()).encode(cmd));} catch(e) {console.log("Пропуск пакета для стабильности");}}function sendDebouncedCommand(cmd) {clearTimeout(debounceTimer);debounceTimer = setTimeout(() => { sendCommand(cmd); }, 50);}function sendDebouncedParam(prefix, val) {sendDebouncedCommand(prefix + val);}function switchTab(tabId, btn) {document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));document.getElementById(tabId).classList.add('active');btn.classList.add('active');}
+    <div class="section">
+        <label>Кастомный цвет режима:</label>
+        <input type="color" id="colorPicker" value="#ff0096" oninput="sendData()">
+    </div>
+
+    <div class="section">
+        <label>Яркость ленты:</label>
+        <input type="range" id="brightness" min="0" max="255" value="128" oninput="sendData()">
+        
+        <label>Чувствительность микрофона:</label>
+        <input type="range" id="sensitivity" min="1" max="100" value="50" oninput="sendData()">
+        
+        <label>Задержка шага (Скорость):</label>
+        <input type="range" id="speed" min="5" max="100" value="30" oninput="sendData()">
+    </div>
+</div>
+
+<script>
+    let ws;
+    
+    function connectIP() {
+        const ip = document.getElementById('ipAddress').value;
+        if(ws) ws.close();
+        
+        ws = new WebSocket(`ws://${ip}:81`);
+        
+        ws.onopen = () => {
+            document.getElementById('status').innerText = "Подключено";
+            document.getElementById('status').className = "status connected";
+        };
+        
+        ws.onclose = () => {
+            document.getElementById('status').innerText = "Дисконнект";
+            document.getElementById('status').className = "status";
+        };
+    }
+
+    function sendData() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+        const hexColor = document.getElementById('colorPicker').value;
+        const r = parseInt(hexColor.substr(1,2), 16);
+        const g = parseInt(hexColor.substr(3,2), 16);
+        const b = parseInt(hexColor.substr(5,2), 16);
+
+        const data = {
+            mode: parseInt(document.getElementById('mode').value),
+            brightness: parseInt(document.getElementById('brightness').value),
+            sensitivity: parseInt(document.getElementById('sensitivity').value),
+            speed: parseInt(document.getElementById('speed').value),
+            r: r, g: g, b: b
+        };
+
+        ws.send(JSON.stringify(data));
+    }
+
+    // Первичное подключение при загрузке страницы, если IP изменен
+    window.onload = () => { connectIP(); };
+</script>
+</body>
+</html>
