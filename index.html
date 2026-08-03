@@ -3,50 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OS LED Matrix</title>
+    <title>Matrix LED OS Pro</title>
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            background: #0b0f19; color: #f3f4f6; padding: 15px; min-height: 100vh;
-        }
-        .container {
-            max-width: 480px; margin: 0 auto; background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px;
-            padding: 20px 15px; backdrop-filter: blur(20px); box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-        }
-        
-        /* Вкладки (Tabs) */
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0b0f19; color: #f3f4f6; padding: 15px; min-height: 100vh; }
+        .container { max-width: 480px; margin: 0 auto; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 20px 15px; backdrop-filter: blur(20px); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
         .tabs { display: flex; background: #111827; border-radius: 14px; padding: 5px; margin-bottom: 20px; }
         .tab-btn { flex: 1; padding: 12px; border: none; background: none; color: #9ca3af; font-weight: 600; font-size: 14px; cursor: pointer; border-radius: 10px; transition: 0.2s; }
         .tab-btn.active { background: #1f2937; color: #38bdf8; }
-        
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
         .card { background: rgba(255, 255, 255, 0.04); border-radius: 16px; padding: 16px; margin-bottom: 14px; text-align: left; }
         .card h3 { font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-        
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; font-size: 15px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-transform: uppercase; }
         .btn-connect { background: #10b981; color: #fff; }
-        
+        .btn-save { background: #eab308; color: #000; margin-top: 10px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-effect { background: #1f2937; color: white; padding: 14px; border-radius: 12px; font-size: 14px; }
-        .btn-music { background: linear-gradient(135deg, #38bdf8, #6366f1); }
-        .btn-off { background: #ef4444; grid-column: span 2; }
-        
+        .btn-effect { background: #1f2937; color: white; padding: 14px; border-radius: 12px; font-size: 14px; border: none; cursor: pointer; }
+        .btn-music { background: linear-gradient(135deg, #38bdf8, #6366f1); font-weight: bold; }
+        .btn-off { background: #ef4444; grid-column: span 2; font-weight: bold; }
         input[type="range"] { width: 100%; height: 6px; background: #1f2937; border-radius: 6px; outline: none; -webkit-appearance: none; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #38bdf8; cursor: pointer; }
         select { width: 100%; padding: 12px; background: #1f2937; border: 1px solid #374151; color: white; border-radius: 12px; outline: none; }
-
-        /* Конструктор цветов */
         .color-constructor { display: flex; justify-content: space-between; gap: 8px; }
         .color-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: #9ca3af; }
         .color-slot input[type="color"] { -webkit-appearance: none; border: none; width: 45px; height: 45px; border-radius: 50%; background: none; cursor: pointer; }
         .color-slot input[type="color"]::-webkit-color-swatch { border: 2px solid #374151; border-radius: 50%; }
-
         .switch-container { display: flex; align-items: center; justify-content: space-between; }
         .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -59,12 +43,11 @@
 <body>
 
     <div class="container">
-        <h2 id="title" style="margin-bottom:15px; font-weight:700;"><i class="fa-solid fa-circle-nodes" style="color:#38bdf8;"></i> Matrix LED OS</h2>
+        <h2 style="margin-bottom:15px; font-weight:700;"><i class="fa-solid fa-circle-nodes" style="color:#38bdf8;"></i> Matrix LED OS</h2>
         
         <button class="btn btn-connect" id="connectBtn" onclick="connectBLE()"><i class="fa-solid fa-link"></i> Подключить пульт</button>
 
         <div id="controlPanel" style="display:none;">
-            <!-- Переключатель вкладок -->
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('controlTab', this)">Управление</button>
                 <button class="tab-btn" onclick="switchTab('settingsTab', this)">Настройки</button>
@@ -75,8 +58,8 @@
                 <div class="card">
                     <h3><i class="fa-solid fa-paint-brush"></i> Статичный цвет</h3>
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <input type="color" id="staticColor" value="#00ff99" oninput="sendCommand(this.value)" style="-webkit-appearance:none; border:none; width:45px; height:45px; background:none; cursor:pointer;">
-                        <span>Выбрать ровный свет</span>
+                        <input type="color" id="staticColor" value="#00ff99" oninput="sendDebouncedCommand(this.value)" style="-webkit-appearance:none; border:none; width:45px; height:45px; background:none; cursor:pointer;">
+                        <span>Включить постоянный свет</span>
                     </div>
                 </div>
 
@@ -95,64 +78,65 @@
             <div id="settingsTab" class="tab-content">
                 <div class="card">
                     <h3><i class="fa-solid fa-microphone"></i> Калибровка шума микрофона</h3>
-                    <input type="range" min="1" max="100" value="50" oninput="sendParam('M', this.value)">
-                    <div style="font-size:11px; color:#6b7280; margin-top:4px;">Левая часть шкалы — ультра-чувствительность в тишине.</div>
+                    <input type="range" min="1" max="100" value="50" oninput="sendDebouncedParam('M', this.value)">
                 </div>
 
                 <div class="card">
-                    <h3><i class="fa-solid fa-palette"></i> Конструктор своего градиента</h3>
+                    <h3><i class="fa-solid fa-palette"></i> Конструктор градиента</h3>
                     <div class="color-constructor">
-                        <div class="color-slot"><input type="color" value="#FF0000" onchange="sendParam('CC0', this.value)"><span>Цвет 1</span></div>
-                        <div class="color-slot"><input type="color" value="#00FF00" onchange="sendParam('CC1', this.value)"><span>Цвет 2</span></div>
-                        <div class="color-slot"><input type="color" value="#0000FF" onchange="sendParam('CC2', this.value)"><span>Цвет 3</span></div>
-                        <div class="color-slot"><input type="color" value="#FF00FF" onchange="sendParam('CC3', this.value)"><span>Цвет 4</span></div>
+                        <div class="color-slot"><input type="color" value="#FF0000" onchange="sendCommand('CC0' + this.value)"><span>Цвет 1</span></div>
+                        <div class="color-slot"><input type="color" value="#00FF00" onchange="sendCommand('CC1' + this.value)"><span>Цвет 2</span></div>
+                        <div class="color-slot"><input type="color" value="#0000FF" onchange="sendCommand('CC2' + this.value)"><span>Цвет 3</span></div>
+                        <div class="color-slot"><input type="color" value="#FF00FF" onchange="sendCommand('CC3' + this.value)"><span>Цвет 4</span></div>
+                    </div>
+                </div>
+
+                <div class="grid" style="margin-bottom:14px;">
+                    <div class="card" style="margin:0;">
+                        <h3>Направление</h3>
+                        <select onchange="sendCommand('D' + this.value)">
+                            <option value="0">Снизу вверх</option>
+                            <option value="1">Из центра</option>
+                        </select>
+                    </div>
+                    <div class="card" style="margin:0;">
+                        <h3>Цвета музыки</h3>
+                        <select onchange="sendCommand('C' + this.value)">
+                            <option value="1">Классика</option>
+                            <option value="2">Неон</option>
+                            <option value="3">Пламя</option>
+                            <option value="4">Мой градиент</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3><i class="fa-solid fa-arrows-left-right"></i> Направление цветомузыки</h3>
-                    <select onchange="sendParam('D', this.value)">
-                        <option value="0">Снизу вверх (Классика)</option>
-                        <option value="1">Из центра в стороны (Симметрия)</option>
-                    </select>
-                </div>
-
-                <div class="card">
-                    <h3><i class="fa-solid fa-droplet"></i> Цвета цветомузыки</h3>
-                    <select onchange="sendParam('C', this.value)">
-                        <option value="1">Зеленый - Желтый - Красный</option>
-                        <option value="2">Неоновый Киберпанк</option>
-                        <option value="3">Пламя костра</option>
-                        <option value="4">✨ МОЙ КАСТОМНЫЙ ГРАДИЕНТ</option>
-                    </select>
-                </div>
-
-                <div class="card">
                     <h3><i class="fa-solid fa-rainbow"></i> Пресеты Радуги</h3>
-                    <select onchange="sendParam('P', this.value)">
+                    <select onchange="sendCommand('P' + this.value)">
                         <option value="0">Классическая</option>
-                        <option value="1">Кислотная крупная</option>
-                        <option value="2">Мягкая морская</option>
-                        <option value="3">✨ МОЯ КАСТОМНАЯ РАДУГА</option>
+                        <option value="1">Кислотная</option>
+                        <option value="2">Мягкая</option>
+                        <option value="3">Моя радуга</option>
                     </select>
                 </div>
 
                 <div class="card">
                     <div class="switch-container">
-                        <span><i class="fa-solid fa-level-down-alt"></i> Удержание пика громкости</span>
+                        <span>Удержание пика громкости</span>
                         <label class="switch">
-                            <input type="checkbox" checked onchange="sendParam('K', this.checked ? '1' : '0')">
+                            <input type="checkbox" checked onchange="sendCommand('K' + (this.checked ? '1' : '0'))">
                             <span class="slider"></span>
                         </label>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3><i class="fa-solid fa-gauge"></i> Скорость анимации эффектов</h3>
-                    <input type="range" min="1" max="100" value="30" oninput="sendParam('S', this.value)">
+                    <h3><i class="fa-solid fa-gauge"></i> Скорость анимации</h3>
+                    <input type="range" min="1" max="100" value="30" oninput="sendDebouncedParam('S', this.value)">
                 </div>
-            </div>
 
+                <button class="btn btn-save" onclick="sendCommand('save')"><i class="fa-solid fa-floppy-disk"></i> Сохранить настройки в плату</button>
+            </div>
         </div>
     </div>
 
@@ -160,4 +144,7 @@
         const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
         const CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
         let txCharacteristic = null;
+        let debounceTimer = null;
 
+        async function connectBLE() {
+            try {const device = await navigator.bluetooth.requestDevice({filters: [{ name: 'ESP32-S3_Controller' }],optionalServices: [SERVICE_UUID]});const server = await device.gatt.connect();const service = await server.getPrimaryService(SERVICE_UUID);txCharacteristic = await service.getCharacteristic(CHAR_UUID);document.getElementById('connectBtn').style.display = 'none';document.getElementById('controlPanel').style.display = 'block';} catch (error) {alert("Ошибка подключения: " + error);}}async function sendCommand(cmd) {if (!txCharacteristic) return;try {await txCharacteristic.writeValueWithoutResponse((new TextEncoder()).encode(cmd));} catch(e) {console.log("Пропуск пакета для стабильности");}}function sendDebouncedCommand(cmd) {clearTimeout(debounceTimer);debounceTimer = setTimeout(() => { sendCommand(cmd); }, 50);}function sendDebouncedParam(prefix, val) {sendDebouncedCommand(prefix + val);}function switchTab(tabId, btn) {document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));document.getElementById(tabId).classList.add('active');btn.classList.add('active');}
