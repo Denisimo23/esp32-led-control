@@ -3,153 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель управления Светомузыкой BLE</title>
+    <title>ESP32-S3 Visualizer Control</title>
     <style>
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
             padding: 20px;
             display: flex;
             justify-content: center;
         }
         .container {
-            max-width: 400px;
             width: 100%;
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        h2 { text-align: center; color: #ffffff; font-weight: 400; margin-bottom: 20px; }
-        .section { margin-bottom: 20px; border-bottom: 1px solid #2d2d2d; padding-bottom: 15px; }
-        .section:last-child { border-bottom: none; }
-        label { display: block; margin-bottom: 8px; font-size: 14px; color: #aaaaaa; }
-        input[type="range"], select {
-            width: 100%;
-            box-sizing: border-box;
-            background: #2a2a2a;
-            border: 1px solid #3d3d3d;
-            color: #fff;
-            padding: 8px;
-            border-radius: 4px;
+        h1 {
+            font-size: 1.5rem;
+            text-align: center;
             margin-bottom: 10px;
+            color: var(--text);
         }
-        input[type="color"] {
-            width: 100%; height: 40px; border: none; background: transparent; cursor: pointer;
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .btn-connect {
-            width: 100%;
-            padding: 12px;
-            background: #0076ff;
-            color: #fff;
+        .btn {
+            background: var(--accent);
+            color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
+            width: 100%;
             transition: background 0.2s;
         }
-        .btn-connect:hover { background: #0056b3; }
-        .status { text-align: center; font-size: 12px; margin-top: 10px; color: #ff5555; }
-        .connected { color: #55ff55; }
+        .btn:hover { background: var(--accent-hover); }
+        .btn:disabled { background: #475569; cursor:not-allowed; }
+        .btn-disconnect { background: #ef4444; }
+        .btn-disconnect:hover { background: #dc2626; }
+        .status {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .status span { font-weight: bold; }
+        .status.connected span { color: #10b981; }
+        .status.disconnected span { color: #ef4444; }
+        .grid-modes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-mode {
+            background: #334155;
+            font-size: 0.9rem;
+        }
+        .btn-mode.active { background: var(--accent); }
+        .control-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .control-group:last-child { margin-bottom: 0; }
+        label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .color-picker-wrapper {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #475569;
+        }
+        input[type="color"] {
+            position: absolute;
+            top: -10%; left: -10%; width: 120%; height: 120%;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+        .palette-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .btn-sm { padding: 8px; font-size: 0.85rem; background: #475569; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Светомузыка BLE</h2>
-    
-    <div class="section">
-        <button class="btn-connect" onclick="connectBLE()">Подключить Bluetooth</button>
-        <div id="status" class="status">Устройство не подключено</div>
+    <h1>ESP32-S3 BLE Контроллер</h1>
+
+    <!-- Модуль коннекта -->
+    <div class="card">
+        <button id="btnConnect" class="btn">Подключиться по BLE</button>
+        <div id="statusText" class="status disconnected" style="margin-top: 12px;">Статус: <span>Отключено</span></div>
     </div>
 
-    <div class="section">
-        <label>Режим анимации:</label>
-        <select id="mode" onchange="sendData()">
-            <option value="0">Статичный цвет</option>
-            <option value="1">Пульсация (Громкость)</option>
-            <option value="2">Бегущая волна из центра</option>
-            <option value="3">Динамическая радуга</option>
-        </select>
-    </div>
-
-    <div class="section">
-        <label>Кастомный цвет режима:</label>
-        <input type="color" id="colorPicker" value="#ff0096" oninput="sendData()">
-    </div>
-
-    <div class="section">
-        <label>Яркость ленты:</label>
-        <input type="range" id="brightness" min="0" max="255" value="128" oninput="sendData()">
+    <!-- Управление (скрыто по умолчанию) -->
+    <div id="mainControls" style="display: none; flex-direction: column; gap: 20px;">
         
-        <label>Чувствительность микрофона:</label>
-        <input type="range" id="sensitivity" min="1" max="100" value="50" oninput="sendData()">
-        
-        <label>Задержка шага (Скорость):</label>
-        <input type="range" id="speed" min="5" max="100" value="30" oninput="sendData()">
+        <!-- Основные режимы работы -->
+        <div class="card">
+            <label>Основной режим визуализации</label>
+            <div class="grid-modes">
+                <button class="btn btn-mode active" id="modeBtn1">Классический VU</button>
+                <button class="btn btn-mode" id="modeBtn2">Фиксация пика</button>
+                <button class="btn btn-mode" id="modeBtn3">Встречные столбики</button>
+                <button class="btn btn-mode" id="modeBtn4">Амплитудный фон</button>
+            </div>
+        </div>
+
+        <!-- Слайдеры параметров -->
+        <div class="card">
+            <div class="control-group">
+                <label>Чувствительность микрофона <span id="valSensitivity">50</span></label>
+                <input type="range" id="rangeSensitivity" min="1" max="100" value="50">
+            </div>
+            <div class="control-group">
+                <label>Скорость падения пиков / анимации <span id="valSpeed">30</span></label>
+                <input type="range" id="rangeSpeed" min="1" max="100" value="30">
+            </div>
+            <div class="control-group">
+                <label>Яркость ленты <span id="valBrightness">128</span></label>
+                <input type="range" id="rangeBrightness" min="0" max="255" value="128">
+            </div>
+        </div>
+
+        <!-- Подрежимы тишины -->
+        <div class="card">
+            <label>Поведение в тишине (Режим тишины)</label>
+            <div class="grid-modes">
+                <button class="btn btn-mode active" id="bgBtn0">Выключен</button>
+                <button class="btn btn-mode" id="bgBtn1">Статичный цвет</button>
+                <button class="btn btn-mode" id="bgBtn2">Радуга</button>
+                <button class="btn btn-mode" id="bgBtn3">Дыхание</button>
+            </div>
+        </div>
+
+        <!-- Инструмент Конструктор радуги -->
+        <div class="card">
+            <label>Конструктор радуги (Палитра до 8 цветов)</label>
+            <div class="palette-grid" id="paletteContainer"></div>
+            <div class="palette-actions">
+                <button class="btn btn-sm" id="btnPaletteAdd">+ Добавить</button>
+                <button class="btn btn-sm" id="btnPaletteReset" style="background:#ef4444;">Сбросить</button>
+                <button class="btn btn-sm" id="btnPaletteSync" style="background:#10b981; margin-left:auto;">Применить палитру</button>
+            </div>
+        </div>
     </div>
 </div>
 
-<script>
-    const SERVICE_UUID = "4faac861-6a92-4d43-99fc-157d1925c223";
-    const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-    
-    let bleCharacteristic = null;
-
-    async function connectBLE() {
-        try {
-            document.getElementById('status').innerText = "Поиск устройства...";
-            
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ name: 'ESP32_Music_LED' }],
-                optionalServices: [SERVICE_UUID]
-            });
-
-            const server = await device.gatt.connect();
-            const service = await server.getPrimaryService(SERVICE_UUID);
-            bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
-
-            document.getElementById('status').innerText = "Подключено к ESP32";
-            document.getElementById('status').className = "status connected";
-            
-            device.addEventListener('gattserverdisconnected', () => {
-                document.getElementById('status').innerText = "Соединение разорвано";
-                document.getElementById('status').className = "status";
-                bleCharacteristic = null;
-            });
-
-        } catch (error) {
-            console.log(error);
-            document.getElementById('status').innerText = "Ошибка подключения";
-            document.getElementById('status').className = "status";
-        }
-    }
-
-    async function sendData() {
-        if (!bleCharacteristic) return;
-
-        const hexColor = document.getElementById('colorPicker').value;
-        const r = parseInt(hexColor.substr(1,2), 16);
-        const g = parseInt(hexColor.substr(3,2), 16);
-        const b = parseInt(hexColor.substr(5,2), 16);
-
-        // Формируем плоский массив байт без использования JSON текстовых строк
-        const data = new Uint8Array([
-            parseInt(document.getElementById('mode').value),
-            parseInt(document.getElementById('brightness').value),
-            parseInt(document.getElementById('sensitivity').value),
-            parseInt(document.getElementById('speed').value),
-            r, g, b
-        ]);
-
-        try {
-            await bleCharacteristic.writeValue(data);
-        } catch (error) {
-            console.error("Ошибка отправки:", error);
-        }
-    }
-</script>
+<!-- Подключаем нашу JS логику -->
+<script src="app.js"></script>
 </body>
 </html>
