@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель управления Светомузыкой</title>
+    <title>Панель управления Светомузыкой BLE</title>
     <style>
         body {
             background-color: #121212;
             color: #e0e0e0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0;
             padding: 20px;
             display: flex;
@@ -26,7 +26,7 @@
         .section { margin-bottom: 20px; border-bottom: 1px solid #2d2d2d; padding-bottom: 15px; }
         .section:last-child { border-bottom: none; }
         label { display: block; margin-bottom: 8px; font-size: 14px; color: #aaaaaa; }
-        input[type="range"], input[type="text"], select {
+        input[type="range"], select {
             width: 100%;
             box-sizing: border-box;
             background: #2a2a2a;
@@ -39,6 +39,18 @@
         input[type="color"] {
             width: 100%; height: 40px; border: none; background: transparent; cursor: pointer;
         }
+        .btn-connect {
+            width: 100%;
+            padding: 12px;
+            background: #0076ff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-connect:hover { background: #0056b3; }
         .status { text-align: center; font-size: 12px; margin-top: 10px; color: #ff5555; }
         .connected { color: #55ff55; }
     </style>
@@ -46,12 +58,11 @@
 <body>
 
 <div class="container">
-    <h2>Светомузыка ESP32</h2>
+    <h2>Светомузыка BLE</h2>
     
     <div class="section">
-        <label>IP адрес ESP32 (из монитора порта):</label>
-        <input type="text" id="ipAddress" value="111.111.111.111" onchange="connectIP()">
-        <div id="status" class="status">Дисконнект</div>
+        <button class="btn-connect" onclick="connectBLE()">Подключить Bluetooth</button>
+        <div id="status" class="status">Устройство не подключено</div>
     </div>
 
     <div class="section">
@@ -82,27 +93,42 @@
 </div>
 
 <script>
-    let ws;
+    const SERVICE_UUID = "4faac861-6a92-4d43-99fc-157d1925c223";
+    const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
     
-    function connectIP() {
-        const ip = document.getElementById('ipAddress').value;
-        if(ws) ws.close();
-        
-        ws = new WebSocket(`ws://${ip}:81`);
-        
-        ws.onopen = () => {
-            document.getElementById('status').innerText = "Подключено";
+    let bleCharacteristic = null;
+
+    async function connectBLE() {
+        try {
+            document.getElementById('status').innerText = "Поиск устройства...";
+            
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ name: 'ESP32_Music_LED' }],
+                optionalServices: [SERVICE_UUID]
+            });
+
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService(SERVICE_UUID);
+            bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+            document.getElementById('status').innerText = "Подключено к ESP32";
             document.getElementById('status').className = "status connected";
-        };
-        
-        ws.onclose = () => {
-            document.getElementById('status').innerText = "Дисконнект";
+            
+            device.addEventListener('gattserverdisconnected', () => {
+                document.getElementById('status').innerText = "Соединение разорвано";
+                document.getElementById('status').className = "status";
+                bleCharacteristic = null;
+            });
+
+        } catch (error) {
+            console.log(error);
+            document.getElementById('status').innerText = "Ошибка подключения";
             document.getElementById('status').className = "status";
-        };
+        }
     }
 
-    function sendData() {
-        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    async function sendData() {
+        if (!bleCharacteristic) return;
 
         const hexColor = document.getElementById('colorPicker').value;
         const r = parseInt(hexColor.substr(1,2), 16);
@@ -117,11 +143,17 @@
             r: r, g: g, b: b
         };
 
-        ws.send(JSON.stringify(data));
-    }
+        const jsonString = JSON.stringify(data);
+        const encoder = new TextEncoder();
+        const buffer = encoder.encode(jsonString);
 
-    // Первичное подключение при загрузке страницы, если IP изменен
-    window.onload = () => { connectIP(); };
+        try {
+            // Отправляем массив байт по BLE
+            await bleCharacteristic.writeValue(buffer);
+        } catch (error) {
+            console.error("Ошибка отправки:", error);
+        }
+    }
 </script>
 </body>
 </html>
