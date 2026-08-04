@@ -3,195 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32-S3 Visualizer Control</title>
+    <title>ESP32-S3 Pro Visualizer</title>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg: #0b0f19;
+            --card: #151d30;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --text: #f1f5f9;
+            --muted: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
         }
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-        body {
-            background-color: var(--bg-color);
-            color: var(--text);
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-        .container {
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        h1 {
-            font-size: 1.5rem;
-            text-align: center;
-            margin-bottom: 10px;
-            color: var(--text);
-        }
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.2s;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 15px; }
+        h1 { font-size: 1.3rem; text-align: center; color: var(--text); font-weight: 700; margin-bottom: 5px; }
+        .card { background: var(--card); border-radius: 14px; padding: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+        .btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
         .btn:hover { background: var(--accent-hover); }
-        .btn:disabled { background: #475569; cursor:not-allowed; }
-        .btn-disconnect { background: #ef4444; }
-        .btn-disconnect:hover { background: #dc2626; }
-        .status {
-            text-align: center;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
+        .btn-disconnect { background: var(--danger); }
+        .btn-disconnect:hover { background: #b91c1c; }
+        .status { text-align: center; font-size: 0.85rem; color: var(--muted); margin-top: 10px; }
         .status span { font-weight: bold; }
-        .status.connected span { color: #10b981; }
-        .status.disconnected span { color: #ef4444; }
-        .grid-modes {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .btn-mode {
-            background: #334155;
-            font-size: 0.9rem;
-        }
-        .btn-mode.active { background: var(--accent); }
-        .control-group {
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        .status.connected span { color: var(--success); }
+        .status.disconnected span { color: var(--danger); }
+        
+        /* Сетка выбора 10 режимов */
+        .modes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 5px; }
+        .btn-mode { background: #1e293b; color: var(--text); font-size: 0.85rem; padding: 10px; border-radius: 8px; border: 1px solid #334155; cursor: pointer; text-align: left; transition: all 0.2s; }
+        .btn-mode.active { background: var(--accent); border-color: var(--accent); font-weight: 600; }
+        
+        .section-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; }
+        
+        /* Слайдеры и группы управления */
+        .control-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
         .control-group:last-child { margin-bottom: 0; }
-        label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            display: flex;
-            justify-content: space-between;
-        }
-        input[type="range"] {
-            width: 100%;
-            accent-color: var(--accent);
-            cursor: pointer;
-        }
-        .palette-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .color-picker-wrapper {
-            position: relative;
-            aspect-ratio: 1;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 2px solid #475569;
-        }
-        input[type="color"] {
-            position: absolute;
-            top: -10%; left: -10%; width: 120%; height: 120%;
-            cursor: pointer;
-            border: none;
-            background: none;
-        }
-        .palette-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 12px;
-        }
-        .btn-sm { padding: 8px; font-size: 0.85rem; background: #475569; }
+        label { font-size: 0.9rem; display: flex; justify-content: space-between; }
+        label span { color: var(--muted); font-size: 0.85rem; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 6px; border-radius: 3px; background: #334155; outline: none; }
+        
+        /* Конструктор палитры */
+        .palette-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
+        .color-slot { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid #334155; background: #0f172a; display: flex; align-items: center; justify-content: center; }
+        .color-slot.empty { border-style: dashed; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+        input[type="color"] { position: absolute; top: -10%; left: -10%; width: 120%; height: 120%; cursor: pointer; border: none; background: none; }
+        .palette-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .btn-sm { padding: 8px 12px; font-size: 0.8rem; background: #334155; border-radius: 6px; }
+        .btn-sm:hover { background: #475569; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>ESP32-S3 BLE Контроллер</h1>
+    <h1>Музыкальный Визуализатор 10 в 1</h1>
 
-    <!-- Модуль коннекта -->
+    <!-- Блок связи по BLE -->
     <div class="card">
-        <button id="btnConnect" class="btn">Подключиться по BLE</button>
-        <div id="statusText" class="status disconnected" style="margin-top: 12px;">Статус: <span>Отключено</span></div>
+        <button id="btnConnect" class="btn">Подключиться к ESP32</button>
+        <div id="statusText" class="status disconnected">Статус: <span>Отключено</span></div>
     </div>
 
-    <!-- Управление (скрыто по умолчанию) -->
-    <div id="mainControls" style="display: none; flex-direction: column; gap: 20px;">
+    <!-- Основной пульт (активируется после сопряжения) -->
+    <div id="mainControls" style="display: none; flex-direction: column; gap: 15px;">
         
-        <!-- Основные режимы работы -->
+        <!-- Общая яркость системы -->
         <div class="card">
-            <label>Основной режим визуализации</label>
-            <div class="grid-modes">
-                <button class="btn btn-mode active" id="modeBtn1">Классический VU</button>
-                <button class="btn btn-mode" id="modeBtn2">Фиксация пика</button>
-                <button class="btn btn-mode" id="modeBtn3">Встречные столбики</button>
-                <button class="btn btn-mode" id="modeBtn4">Амплитудный фон</button>
+            <div class="control-group">
+                <label>Общая яркость системы <span id="valGlobalBrightness">128</span></label>
+                <input type="range" id="rangeGlobalBrightness" min="0" max="255" value="128">
             </div>
         </div>
 
-        <!-- Слайдеры параметров -->
+        <!-- Выбор режимов (1-10) -->
         <div class="card">
-            <div class="control-group">
-                <label>Чувствительность микрофона <span id="valSensitivity">50</span></label>
-                <input type="range" id="rangeSensitivity" min="1" max="100" value="50">
-            </div>
-            <div class="control-group">
-                <label>Скорость падения пиков / анимации <span id="valSpeed">30</span></label>
-                <input type="range" id="rangeSpeed" min="1" max="100" value="30">
-            </div>
-            <div class="control-group">
-                <label>Яркость ленты <span id="valBrightness">128</span></label>
-                <input type="range" id="rangeBrightness" min="0" max="255" value="128">
+            <div class="section-title">Выбор активного режима</div>
+            <div class="modes-grid" id="modesContainer">
+                <!-- Кнопки режимов генерируются динамически через JS -->
             </div>
         </div>
 
-        <!-- Подрежимы тишины -->
+        <!-- Динамическая панель кастомизации текущего режима -->
         <div class="card">
-            <label>Поведение в тишине (Режим тишины)</label>
-            <div class="grid-modes">
-                <button class="btn btn-mode active" id="bgBtn0">Выключен</button>
-                <button class="btn btn-mode" id="bgBtn1">Статичный цвет</button>
-                <button class="btn btn-mode" id="bgBtn2">Радуга</button>
-                <button class="btn btn-mode" id="bgBtn3">Дыхание</button>
+            <div class="section-title">Настройки режима: <span id="lblActiveModeName">VU Meter</span></div>
+            
+            <!-- Выбор подрежимов -->
+            <div class="control-group" style="margin-bottom: 15px;">
+                <label>Вариант (Подрежим)</label>
+                <div class="modes-grid" id="subModesContainer">
+                    <!-- Подрежимы генерируются через JS -->
+                </div>
+            </div>
+
+            <!-- Индивидуальные ползунки -->
+            <div id="slidersContainer">
+                <div class="control-group">
+                    <label>Чувствительность звука <span id="valSensitivity">50</span></label>
+                    <input type="range" id="rangeSensitivity" min="1" max="100" value="50">
+                </div>
+                <div class="control-group">
+                    <label>Скорость анимации / падения <span id="valSpeed">30</span></label>
+                    <input type="range" id="rangeSpeed" min="1" max="100" value="30">
+                </div>
+                <div class="control-group" id="groupOption">
+                    <label id="lblOption">Дополнительный параметр <span id="valOption">50</span></label>
+                    <input type="range" id="rangeOption" min="1" max="100" value="50">
+                </div>
             </div>
         </div>
 
-        <!-- Инструмент Конструктор радуги -->
+        <!-- Локальный конструктор палитры для режима -->
         <div class="card">
-            <label>Конструктор радуги (Палитра до 8 цветов)</label>
+            <div class="section-title">Конструктор палитры режима (До 4 цветов)</div>
             <div class="palette-grid" id="paletteContainer"></div>
             <div class="palette-actions">
-                <button class="btn btn-sm" id="btnPaletteAdd">+ Добавить</button>
-                <button class="btn btn-sm" id="btnPaletteReset" style="background:#ef4444;">Сбросить</button>
-                <button class="btn btn-sm" id="btnPaletteSync" style="background:#10b981; margin-left:auto;">Применить палитру</button>
+                <button class="btn btn-sm" id="btnColorAdd">+ Цвет</button>
+                <button class="btn btn-sm" id="btnColorReset" style="background:var(--danger)">Сброс</button>
+                <button class="btn btn-sm" id="btnColorSync" style="background:var(--success); margin-left:auto;">Сохранить в ESP32</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Подключаем нашу JS логику -->
 <script src="app.js"></script>
 </body>
 </html>
