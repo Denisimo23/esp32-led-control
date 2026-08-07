@@ -1,130 +1,226 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32-S3 Pro Visualizer</title>
-    <style>
-        :root {
-            --bg: #0b0f19;
-            --card: #151d30;
-            --accent: #2563eb;
-            --accent-hover: #1d4ed8;
-            --text: #f1f5f9;
-            --muted: #64748b;
-            --success: #10b981;
-            --danger: #ef4444;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background: var(--bg); color: var(--text); padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 15px; }
-        h1 { font-size: 1.3rem; text-align: center; color: var(--text); font-weight: 700; margin-bottom: 5px; }
-        .card { background: var(--card); border-radius: 14px; padding: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
-        .btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
-        .btn:hover { background: var(--accent-hover); }
-        .btn-disconnect { background: var(--danger); }
-        .btn-disconnect:hover { background: #b91c1c; }
-        .status { text-align: center; font-size: 0.85rem; color: var(--muted); margin-top: 10px; }
-        .status span { font-weight: bold; }
-        .status.connected span { color: var(--success); }
-        .status.disconnected span { color: var(--danger); }
-        
-        /* Сетка выбора 10 режимов */
-        .modes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 5px; }
-        .btn-mode { background: #1e293b; color: var(--text); font-size: 0.85rem; padding: 10px; border-radius: 8px; border: 1px solid #334155; cursor: pointer; text-align: left; transition: all 0.2s; }
-        .btn-mode.active { background: var(--accent); border-color: var(--accent); font-weight: 600; }
-        
-        .section-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; }
-        
-        /* Слайдеры и группы управления */
-        .control-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
-        .control-group:last-child { margin-bottom: 0; }
-        label { font-size: 0.9rem; display: flex; justify-content: space-between; }
-        label span { color: var(--muted); font-size: 0.85rem; }
-        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 6px; border-radius: 3px; background: #334155; outline: none; }
-        
-        /* Конструктор палитры */
-        .palette-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
-        .color-slot { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid #334155; background: #0f172a; display: flex; align-items: center; justify-content: center; }
-        .color-slot.empty { border-style: dashed; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
-        input[type="color"] { position: absolute; top: -10%; left: -10%; width: 120%; height: 120%; cursor: pointer; border: none; background: none; }
-        .palette-actions { display: flex; gap: 8px; margin-top: 12px; }
-        .btn-sm { padding: 8px 12px; font-size: 0.8rem; background: #334155; border-radius: 6px; }
-        .btn-sm:hover { background: #475569; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32 LED Controller</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Segoe UI,Roboto,sans-serif;background:#0f0f1a;color:#e0e0ff;min-height:100vh;padding:20px}
+  h1{text-align:center;margin-bottom:20px;font-size:1.8em;background:linear-gradient(90deg,#ff0055,#00aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+  .card{background:#1a1a2e;border-radius:12px;padding:15px;cursor:pointer;transition:all .2s;border:2px solid transparent;text-align:center}
+  .card:hover{transform:translateY(-3px);border-color:#00aaff}
+  .card.active{background:#16213e;border-color:#ff0055;box-shadow:0 0 15px rgba(255,0,85,.3)}
+  .card h3{font-size:.9em;margin-bottom:5px}
+  .card span{font-size:.75em;opacity:.7}
+  .controls{background:#1a1a2e;border-radius:12px;padding:20px;margin-bottom:20px}
+  .control-row{display:flex;align-items:center;justify-content:space-between;margin:12px 0;flex-wrap:wrap;gap:10px}
+  .control-row label{min-width:120px;font-weight:500}
+  input[type=range]{flex:1;min-width:150px}
+  input[type=color]{width:60px;height:40px;border:none;border-radius:8px;cursor:pointer}
+  input[type=number]{width:80px;padding:8px;border-radius:6px;border:none;background:#0f0f1a;color:#fff}
+  input[type=text]{flex:1;padding:8px;border-radius:6px;border:none;background:#0f0f1a;color:#fff}
+  select{padding:8px 12px;border-radius:6px;border:none;background:#0f0f1a;color:#fff;cursor:pointer}
+  .value{min-width:40px;text-align:right;font-family:monospace;color:#00aaff}
+  .btn{background:linear-gradient(135deg,#ff0055,#00aaff);border:none;color:#fff;padding:12px 24px;border-radius:8px;cursor:pointer;font-size:1em;margin:5px;transition:transform .1s}
+  .btn:hover{transform:scale(1.05)}
+  .btn:active{transform:scale(.95)}
+  .btn-secondary{background:#1a1a2e;border:1px solid #00aaff}
+  .status{position:fixed;top:10px;right:10px;padding:8px 16px;border-radius:20px;font-size:.8em;font-weight:bold;transition:all .3s}
+  .status.online{background:#00ff8855;color:#00ff88}
+  .status.offline{background:#ff005555;color:#ff0055}
+  .submodes{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+  .sub-btn{padding:6px 12px;border-radius:6px;border:1px solid #444;background:#0f0f1a;color:#aaa;cursor:pointer;font-size:.8em;transition:all .2s}
+  .sub-btn.active{background:#00aaff;color:#000;border-color:#00aaff}
+  .section-title{font-size:1.2em;margin:20px 0 10px;color:#00aaff;border-bottom:1px solid #333;padding-bottom:5px}
+  .connect-box{background:#1a1a2e;border-radius:12px;padding:15px;margin-bottom:20px;text-align:center}
+  .hidden{display:none}
+  .hint{font-size:.75em;opacity:.6;margin-top:8px}
+  @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}h1{font-size:1.4em}}
+</style>
+<base target="_blank">
 </head>
 <body>
+<div class="status offline" id="status">OFFLINE</div>
+<h1>ESP32 LED Controller</h1>
 
-<div class="container">
-    <h1>Музыкальный Визуализатор 10 в 1</h1>
-
-    <!-- Блок связи по BLE -->
-    <div class="card">
-        <button id="btnConnect" class="btn">Подключиться к ESP32</button>
-        <div id="statusText" class="status disconnected">Статус: <span>Отключено</span></div>
-    </div>
-
-    <!-- Основной пульт (активируется после сопряжения) -->
-    <div id="mainControls" style="display: none; flex-direction: column; gap: 15px;">
-        
-        <!-- Общая яркость системы -->
-        <div class="card">
-            <div class="control-group">
-                <label>Общая яркость системы <span id="valGlobalBrightness">128</span></label>
-                <input type="range" id="rangeGlobalBrightness" min="0" max="255" value="128">
-            </div>
-        </div>
-
-        <!-- Выбор режимов (1-10) -->
-        <div class="card">
-            <div class="section-title">Выбор активного режима</div>
-            <div class="modes-grid" id="modesContainer">
-                <!-- Кнопки режимов генерируются динамически через JS -->
-            </div>
-        </div>
-
-        <!-- Динамическая панель кастомизации текущего режима -->
-        <div class="card">
-            <div class="section-title">Настройки режима: <span id="lblActiveModeName">VU Meter</span></div>
-            
-            <!-- Выбор подрежимов -->
-            <div class="control-group" style="margin-bottom: 15px;">
-                <label>Вариант (Подрежим)</label>
-                <div class="modes-grid" id="subModesContainer">
-                    <!-- Подрежимы генерируются через JS -->
-                </div>
-            </div>
-
-            <!-- Индивидуальные ползунки -->
-            <div id="slidersContainer">
-                <div class="control-group">
-                    <label>Чувствительность звука <span id="valSensitivity">50</span></label>
-                    <input type="range" id="rangeSensitivity" min="1" max="100" value="50">
-                </div>
-                <div class="control-group">
-                    <label>Скорость анимации / падения <span id="valSpeed">30</span></label>
-                    <input type="range" id="rangeSpeed" min="1" max="100" value="30">
-                </div>
-                <div class="control-group" id="groupOption">
-                    <label id="lblOption">Дополнительный параметр <span id="valOption">50</span></label>
-                    <input type="range" id="rangeOption" min="1" max="100" value="50">
-                </div>
-            </div>
-        </div>
-
-        <!-- Локальный конструктор палитры для режима -->
-        <div class="card">
-            <div class="section-title">Конструктор палитры режима (До 4 цветов)</div>
-            <div class="palette-grid" id="paletteContainer"></div>
-            <div class="palette-actions">
-                <button class="btn btn-sm" id="btnColorAdd">+ Цвет</button>
-                <button class="btn btn-sm" id="btnColorReset" style="background:var(--danger)">Сброс</button>
-                <button class="btn btn-sm" id="btnColorSync" style="background:var(--success); margin-left:auto;">Сохранить в ESP32</button>
-            </div>
-        </div>
-    </div>
+<div class="connect-box">
+  <p style="margin-bottom:10px;font-weight:bold">Выберите способ подключения:</p>
+  <button class="btn" id="btnBle" onclick="connectBLE()" style="display:none">Подключить Bluetooth</button>
+  <button class="btn btn-secondary" onclick="toggleWiFi()">Подключить по WiFi</button>
+  <div id="wifiBox" class="hidden" style="margin-top:10px">
+    <input type="text" id="espIP" value="192.168.4.1" style="max-width:200px">
+    <button class="btn" onclick="doConnectWiFi()" style="margin:0">Подключить</button>
+  </div>
+  <p class="hint" id="connHint">Bluetooth работает в Chrome/Android/Windows. WiFi — в любом браузере.</p>
 </div>
 
-<script src="app.js"></script>
+<div class="section-title">Цветомузыка (10 режимов)</div>
+<div class="grid" id="musicModes"></div>
+
+<div class="section-title">Световые эффекты (10 режимов)</div>
+<div class="grid" id="lightModes"></div>
+
+<div class="controls">
+  <div class="section-title">Настройки</div>
+  <div class="control-row"><label>Яркость</label><input type="range" id="brightness" min="0" max="255" value="128"><span class="value" id="v-brightness">128</span></div>
+  <div class="control-row"><label>Скорость</label><input type="range" id="speed" min="0" max="255" value="50"><span class="value" id="v-speed">50</span></div>
+  <div class="control-row"><label>Чувствительность</label><input type="range" id="sensitivity" min="0" max="255" value="128"><span class="value" id="v-sensitivity">128</span></div>
+  <div class="control-row"><label>Порог шума</label><input type="range" id="noiseGate" min="0" max="1023" value="120"><span class="value" id="v-noiseGate">120</span></div>
+  <div class="control-row"><label>Усиление</label><input type="range" id="gain" min="5" max="50" value="18"><span class="value" id="v-gain">1.8</span></div>
+  <div class="control-row"><label>Сглаживание</label><input type="range" id="smoothing" min="0" max="100" value="30"><span class="value" id="v-smoothing">0.3</span></div>
+  <div class="control-row"><label>Оттенок (Hue)</label><input type="range" id="hue" min="0" max="255" value="0"><span class="value" id="v-hue">0</span></div>
+  <div class="control-row"><label>Насыщенность</label><input type="range" id="saturation" min="0" max="255" value="255"><span class="value" id="v-saturation">255</span></div>
+  <div class="control-row"><label>Кол-во LED</label><input type="number" id="numLeds" min="1" max="480" value="144"></div>
+  <div class="control-row"><label>Цвет</label><input type="color" id="color" value="#ff0000"></div>
+  <div class="control-row"><label>Палитра</label><select id="palette">
+    <option value="0">Радуга</option><option value="1">Закат</option><option value="2">Океан</option>
+    <option value="3">Лес</option><option value="4">Огонь</option><option value="5">Лёд</option>
+    <option value="6">Вечеринка</option><option value="7">Лава</option><option value="8">Облака</option>
+    <option value="9">Глубина</option>
+  </select></div>
+  <div class="control-row"><label>Зеркало</label><input type="checkbox" id="mirror"></div>
+  <div class="control-row"><label>Реверс</label><input type="checkbox" id="reverse"></div>
+  <div class="control-row"><label>Автосмена</label><input type="checkbox" id="autoChange"></div>
+  <div class="control-row"><label>Интервал (сек)</label><input type="number" id="autoChangeTime" min="5" max="300" value="30"></div>
+  <div style="text-align:center;margin-top:15px">
+    <button class="btn" onclick="sendAll()">Применить</button>
+    <button class="btn" onclick="randomMode()">Случайный</button>
+    <button class="btn" onclick="savePreset()">Сохранить</button>
+    <button class="btn" onclick="loadPreset()">Загрузить</button>
+  </div>
+</div>
+
+<script>
+const musicNames=["Спектр","Пульс","Чейз-частоты","Бит-вспышка","Водопад","Риппл","Энергия","Бас-дроп","Эквалайзер","Звуковая волна"];
+const lightNames=["Радуга","Огонь","Океан","Дыхание","Комета","Матрица","Мерцание","Погоня","Градиент","Стробоскоп"];
+const subNames=[["Радуга","Огонь","Пик"],["Равномерно","От центра","От краёв"],["Низ-выс","Выс-низ","Пинг-понг"],["Белый","Цвет","Стробо"],["Сверху","Снизу","От центра"],["От центра","От краёв","Случайно"],["Тёплый","Холодный","Вечеринка"],["Красный","Синий","Фиолетовый"],["Классик","Зеркало","Дуальный"],["Синус","Квадрат","Треугольник"],["Плавный","Полосы","Блёстки"],["Красный","Синий","Зелёный"],["Глубокий","Мелкий","Неон"],["Медленно","Быстро","Хаос"],["Белый","Радуга","Огонь"],["Зелёный","Красный","Синий"],["Белый","Цвет","Новый год"],["Один","Двойной","Радуга"],["Закат","Океан","Лес"],["Белый","Цвет","Полиция"]];
+const SERVICE_UUID='4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const CHARACTERISTIC_UUID='beb5483e-36e1-4688-b7f5-ea07361b26a8';
+let ws,bleChar,currentMode=0,currentSub=0,connType='none';
+
+function init(){
+  if(navigator.bluetooth){document.getElementById('btnBle').style.display='inline-block';}
+  const mm=document.getElementById('musicModes');
+  const lm=document.getElementById('lightModes');
+  musicNames.forEach((name,i)=>mm.appendChild(createCard(i,name,true)));
+  lightNames.forEach((name,i)=>lm.appendChild(createCard(i+10,name,false)));
+  setupListeners();
+  loadFromStorage();
+}
+
+function createCard(mode,name,isMusic){
+  const div=document.createElement('div');
+  div.className='card'+(mode===currentMode?' active':'');
+  div.dataset.mode=mode;
+  div.innerHTML=`<h3>${name}</h3><span>${isMusic?'Цветомузыка':'Свет'}</span><div class="submodes"></div>`;
+  subNames[mode].forEach((s,si)=>{
+    const b=document.createElement('button');
+    b.className='sub-btn'+(si===0?' active':'');
+    b.textContent=s;
+    b.onclick=(e)=>{e.stopPropagation();setSubMode(mode,si,b);};
+    div.querySelector('.submodes').appendChild(b);
+  });
+  div.onclick=()=>setMode(mode,div);
+  return div;
+}
+
+function setMode(m,el){
+  currentMode=m;currentSub=0;
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
+  if(el){el.classList.add('active');el.querySelector('.sub-btn').classList.add('active');}
+  sendCmd({mode:m,subMode:0});
+}
+
+function setSubMode(m,si,btn){
+  currentMode=m;currentSub=si;
+  const card=btn.closest('.card');
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
+  card.classList.add('active');btn.classList.add('active');
+  sendCmd({mode:m,subMode:si});
+}
+
+async function connectBLE(){
+  try{
+    const device=await navigator.bluetooth.requestDevice({
+      filters:[{name:'LED-Controller'}],
+      optionalServices:[SERVICE_UUID]
+    });
+    const server=await device.gatt.connect();
+    const service=await server.getPrimaryService(SERVICE_UUID);
+    bleChar=await service.getCharacteristic(CHARACTERISTIC_UUID);
+    await bleChar.startNotifications();
+    bleChar.addEventListener('characteristicvaluechanged',(e)=>{
+      const val=new TextDecoder().decode(e.target.value);
+      try{const d=JSON.parse(val);applyState(d);}catch(err){}
+    });
+    connType='ble';
+    document.getElementById('status').textContent='BLE ONLINE';
+    document.getElementById('status').className='status online';
+    document.getElementById('connHint').textContent='Bluetooth подключен! Управляйте светом.';
+  }catch(err){alert('Ошибка Bluetooth: '+err.message);}
+}
+
+function toggleWiFi(){document.getElementById('wifiBox').classList.toggle('hidden');}
+function doConnectWiFi(){
+  const ip=document.getElementById('espIP').value;
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  ws=new WebSocket(`${proto}//${ip}/ws`);
+  ws.onopen=()=>{connType='wifi';document.getElementById('status').textContent='WIFI ONLINE';document.getElementById('status').className='status online';document.getElementById('connHint').textContent='WiFi подключен!';};
+  ws.onclose=()=>{document.getElementById('status').textContent='OFFLINE';document.getElementById('status').className='status offline';};
+  ws.onmessage=(e)=>{try{const d=JSON.parse(e.data);applyState(d);}catch(err){}};
+}
+
+function sendCmd(obj){
+  if(connType==='ble'&&bleChar){bleChar.writeValue(new TextEncoder().encode(JSON.stringify(obj)));}
+  else if(connType==='wifi'&&ws&&ws.readyState===1){ws.send(JSON.stringify(obj));}
+}
+function sendAll(){sendCmd(buildState());}
+
+function buildState(){
+  const c=document.getElementById('color').value;
+  return{mode:currentMode,subMode:currentSub,brightness:+document.getElementById('brightness').value,speed:+document.getElementById('speed').value,sensitivity:+document.getElementById('sensitivity').value,noiseGate:+document.getElementById('noiseGate').value,hue:+document.getElementById('hue').value,saturation:+document.getElementById('saturation').value,numLeds:+document.getElementById('numLeds').value,mirror:document.getElementById('mirror').checked,reverse:document.getElementById('reverse').checked,smoothing:+document.getElementById('smoothing').value/100,gain:+document.getElementById('gain').value/10,autoChange:document.getElementById('autoChange').checked,autoChangeTime:+document.getElementById('autoChangeTime').value,palette:+document.getElementById('palette').value,solidColor:parseInt(c.slice(1),16)};
+}
+
+function applyState(d){
+  if(d.mode!==undefined){currentMode=d.mode;currentSub=d.subMode||0;updateUI();}
+  for(const k in d){
+    const el=document.getElementById(k);
+    if(!el)continue;
+    if(el.type==='checkbox')el.checked=d[k];
+    else if(el.type==='color')el.value='#'+((d[k]|0).toString(16)).padStart(6,'0');
+    else el.value=d[k];
+    const disp=document.getElementById('v-'+k);
+    if(disp)disp.textContent=(k==='gain'||k==='smoothing')?(d[k]*10|0)/10:d[k];
+  }
+}
+
+function updateUI(){
+  document.querySelectorAll('.card').forEach(c=>{
+    c.classList.toggle('active',+c.dataset.mode===currentMode);
+    c.querySelectorAll('.sub-btn').forEach((b,i)=>b.classList.toggle('active',i===currentSub));
+  });
+}
+
+function setupListeners(){
+  ['brightness','speed','sensitivity','noiseGate','hue','saturation'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',function(){document.getElementById('v-'+id).textContent=this.value;sendCmd({[id]:+this.value});});
+  });
+  document.getElementById('gain').addEventListener('input',function(){document.getElementById('v-gain').textContent=(this.value/10).toFixed(1);sendCmd({gain:this.value/10});});
+  document.getElementById('smoothing').addEventListener('input',function(){document.getElementById('v-smoothing').textContent=(this.value/100).toFixed(2);sendCmd({smoothing:this.value/100});});
+  ['mirror','reverse','autoChange'].forEach(id=>{document.getElementById(id).addEventListener('change',function(){sendCmd({[id]:this.checked});});});
+  ['numLeds','autoChangeTime','palette'].forEach(id=>{document.getElementById(id).addEventListener('change',function(){sendCmd({[id]:+this.value});});});
+  document.getElementById('color').addEventListener('input',function(){sendCmd({solidColor:parseInt(this.value.slice(1),16)});});
+}
+
+function randomMode(){currentMode=Math.floor(Math.random()*20);currentSub=Math.floor(Math.random()*3);updateUI();sendAll();}
+function savePreset(){localStorage.setItem('ledPreset',JSON.stringify(buildState()));alert('Сохранено!');}
+function loadPreset(){const p=localStorage.getItem('ledPreset');if(p){applyState(JSON.parse(p));sendAll();}}
+function loadFromStorage(){const p=localStorage.getItem('ledPreset');if(p){const d=JSON.parse(p);if(d.mode!==undefined){currentMode=d.mode;currentSub=d.subMode||0;}}updateUI();}
+init();
+</script>
 </body>
 </html>
