@@ -20,13 +20,12 @@
   input[type=range]{flex:1;min-width:150px}
   input[type=color]{width:60px;height:40px;border:none;border-radius:8px;cursor:pointer}
   input[type=number]{width:80px;padding:8px;border-radius:6px;border:none;background:#0f0f1a;color:#fff}
-  input[type=text]{flex:1;padding:8px;border-radius:6px;border:none;background:#0f0f1a;color:#fff}
   select{padding:8px 12px;border-radius:6px;border:none;background:#0f0f1a;color:#fff;cursor:pointer}
   .value{min-width:40px;text-align:right;font-family:monospace;color:#00aaff}
   .btn{background:linear-gradient(135deg,#ff0055,#00aaff);border:none;color:#fff;padding:12px 24px;border-radius:8px;cursor:pointer;font-size:1em;margin:5px;transition:transform .1s}
   .btn:hover{transform:scale(1.05)}
   .btn:active{transform:scale(.95)}
-  .btn-secondary{background:#1a1a2e;border:1px solid #00aaff}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
   .status{position:fixed;top:10px;right:10px;padding:8px 16px;border-radius:20px;font-size:.8em;font-weight:bold;transition:all .3s}
   .status.online{background:#00ff8855;color:#00ff88}
   .status.offline{background:#ff005555;color:#ff0055}
@@ -35,8 +34,8 @@
   .sub-btn.active{background:#00aaff;color:#000;border-color:#00aaff}
   .section-title{font-size:1.2em;margin:20px 0 10px;color:#00aaff;border-bottom:1px solid #333;padding-bottom:5px}
   .connect-box{background:#1a1a2e;border-radius:12px;padding:15px;margin-bottom:20px;text-align:center}
-  .hidden{display:none}
   .hint{font-size:.75em;opacity:.6;margin-top:8px}
+  .no-ble{background:#ff005522;border:1px solid #ff0055;border-radius:8px;padding:10px;margin-top:10px}
   @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}h1{font-size:1.4em}}
 </style>
 <base target="_blank">
@@ -46,14 +45,12 @@
 <h1>ESP32 LED Controller</h1>
 
 <div class="connect-box">
-  <p style="margin-bottom:10px;font-weight:bold">Выберите способ подключения:</p>
-  <button class="btn" id="btnBle" onclick="connectBLE()" style="display:none">Подключить Bluetooth</button>
-  <button class="btn btn-secondary" onclick="toggleWiFi()">Подключить по WiFi</button>
-  <div id="wifiBox" class="hidden" style="margin-top:10px">
-    <input type="text" id="espIP" value="192.168.4.1" style="max-width:200px">
-    <button class="btn" onclick="doConnectWiFi()" style="margin:0">Подключить</button>
+  <p style="margin-bottom:10px;font-weight:bold">Bluetooth подключение</p>
+  <button class="btn" id="btnBle" onclick="connectBLE()">Подключить Bluetooth</button>
+  <p class="hint" id="connHint">Нажмите кнопку, выберите устройство "LED-Controller"</p>
+  <div id="noBleBox" class="no-ble hidden">
+    Ваш браузер не поддерживает Bluetooth. Используйте Chrome, Edge или Opera на Android/Windows/Mac.
   </div>
-  <p class="hint" id="connHint">Bluetooth работает в Chrome/Android/Windows. WiFi — в любом браузере.</p>
 </div>
 
 <div class="section-title">Цветомузыка (10 режимов)</div>
@@ -98,10 +95,14 @@ const lightNames=["Радуга","Огонь","Океан","Дыхание","К�
 const subNames=[["Радуга","Огонь","Пик"],["Равномерно","От центра","От краёв"],["Низ-выс","Выс-низ","Пинг-понг"],["Белый","Цвет","Стробо"],["Сверху","Снизу","От центра"],["От центра","От краёв","Случайно"],["Тёплый","Холодный","Вечеринка"],["Красный","Синий","Фиолетовый"],["Классик","Зеркало","Дуальный"],["Синус","Квадрат","Треугольник"],["Плавный","Полосы","Блёстки"],["Красный","Синий","Зелёный"],["Глубокий","Мелкий","Неон"],["Медленно","Быстро","Хаос"],["Белый","Радуга","Огонь"],["Зелёный","Красный","Синий"],["Белый","Цвет","Новый год"],["Один","Двойной","Радуга"],["Закат","Океан","Лес"],["Белый","Цвет","Полиция"]];
 const SERVICE_UUID='4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const CHARACTERISTIC_UUID='beb5483e-36e1-4688-b7f5-ea07361b26a8';
-let ws,bleChar,currentMode=0,currentSub=0,connType='none';
+let bleChar,currentMode=0,currentSub=0;
 
 function init(){
-  if(navigator.bluetooth){document.getElementById('btnBle').style.display='inline-block';}
+  if(!navigator.bluetooth){
+    document.getElementById('btnBle').disabled=true;
+    document.getElementById('noBleBox').classList.remove('hidden');
+    document.getElementById('connHint').textContent='Bluetooth недоступен в этом браузере';
+  }
   const mm=document.getElementById('musicModes');
   const lm=document.getElementById('lightModes');
   musicNames.forEach((name,i)=>mm.appendChild(createCard(i,name,true)));
@@ -157,26 +158,14 @@ async function connectBLE(){
       const val=new TextDecoder().decode(e.target.value);
       try{const d=JSON.parse(val);applyState(d);}catch(err){}
     });
-    connType='ble';
-    document.getElementById('status').textContent='BLE ONLINE';
+    document.getElementById('status').textContent='ONLINE';
     document.getElementById('status').className='status online';
     document.getElementById('connHint').textContent='Bluetooth подключен! Управляйте светом.';
-  }catch(err){alert('Ошибка Bluetooth: '+err.message);}
-}
-
-function toggleWiFi(){document.getElementById('wifiBox').classList.toggle('hidden');}
-function doConnectWiFi(){
-  const ip=document.getElementById('espIP').value;
-  const proto=location.protocol==='https:'?'wss:':'ws:';
-  ws=new WebSocket(`${proto}//${ip}/ws`);
-  ws.onopen=()=>{connType='wifi';document.getElementById('status').textContent='WIFI ONLINE';document.getElementById('status').className='status online';document.getElementById('connHint').textContent='WiFi подключен!';};
-  ws.onclose=()=>{document.getElementById('status').textContent='OFFLINE';document.getElementById('status').className='status offline';};
-  ws.onmessage=(e)=>{try{const d=JSON.parse(e.data);applyState(d);}catch(err){}};
+  }catch(err){alert('Ошибка: '+err.message);}
 }
 
 function sendCmd(obj){
-  if(connType==='ble'&&bleChar){bleChar.writeValue(new TextEncoder().encode(JSON.stringify(obj)));}
-  else if(connType==='wifi'&&ws&&ws.readyState===1){ws.send(JSON.stringify(obj));}
+  if(bleChar){bleChar.writeValue(new TextEncoder().encode(JSON.stringify(obj)));}
 }
 function sendAll(){sendCmd(buildState());}
 
