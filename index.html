@@ -3,55 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Управление Потолком</title>
+    <title>Управление цветомузыкой ESP32</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: #fff; text-align: center; padding: 20px; }
-        button { background: #007bff; color: white; border: none; padding: 12px 20px; margin: 5px; border-radius: 8px; font-size: 16px; cursor: pointer; }
-        button:active { background: #0056b3; }
-        .control-group { background: #1e1e1e; padding: 15px; margin: 15px 0; border-radius: 10px; }
-        select, input[type=range] { width: 80%; padding: 10px; margin: 10px 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #121214;
+            color: #e0e0e0;
+            padding: 20px 10px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        .main-btn {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+            transition: transform 0.1s, background 0.2s;
+        }
+        .main-btn:active {
+            transform: scale(0.98);
+        }
+        #status {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #ff4d4d;
+        }
+        #status.connected {
+            color: #00ff88;
+        }
+        .section {
+            background: #1e1e24;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .section h3 {
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            font-size: 16px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+        }
+        .mode-btn {
+            background: #2a2a35;
+            color: #ddd;
+            border: 1px solid #3d3d4e;
+            padding: 12px 8px;
+            border-radius: 10px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 48px;
+        }
+        .mode-btn:hover {
+            background: #3b3b4f;
+        }
+        .mode-btn.active {
+            background: #007bff;
+            color: #fff;
+            border-color: #0056b3;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+            background: #252530;
+            padding: 10px 15px;
+            border-radius: 10px;
+        }
+        .control-row label {
+            font-size: 14px;
+            flex-grow: 1;
+        }
+        .btn-group {
+            display: flex;
+            gap: 5px;
+        }
+        .ctrl-btn {
+            background: #3a3a4c;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .ctrl-btn:active {
+            background: #007bff;
+        }
+        select {
+            background: #2a2a35;
+            color: white;
+            border: 1px solid #3d3d4e;
+            padding: 10px;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 
     <h1>Управление Потолком</h1>
-    <button onclick="connectBLE()">Подключиться по Bluetooth</button>
-    <p id="status">Статус: Отключено</p>
+    <button class="main-btn" onclick="connectBLE()">Подключиться по Bluetooth</button>
+    <div id="status">Статус: Отключено</div>
 
-    <div class="control-group">
-        <h3>Режим (0-9 Музыка, 10-29 Обычные)</h3>
-        <input type="range" id="mode" min="0" max="29" value="0" onchange="sendVal('M', this.value)">
-        <p>Выбран режим: <span id="modeNum">0</span></p>
-
-        <h3>Подрежим (Вариация 0, 1, 2)</h3>
-        <button onclick="sendVal('S', 0)">Подрежим 1</button>
-        <button onclick="sendVal('S', 1)">Подрежим 2</button>
-        <button onclick="sendVal('S', 2)">Подрежим 3</button>
+    <!-- ВЫБОР ПОДРЕЖИМА -->
+    <div class="section">
+        <h3>Подрежимы (Вариации)</h3>
+        <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+            <button class="mode-btn sub-btn active" onclick="selectSubmode(0)">Вариант 1</button>
+            <button class="mode-btn sub-btn" onclick="selectSubmode(1)">Вариант 2</button>
+            <button class="mode-btn sub-btn" onclick="selectSubmode(2)">Вариант 3</button>
+        </div>
     </div>
 
-    <div class="control-group">
-        <h3>Настройки</h3>
-        <label>Яркость:</label><br>
-        <input type="range" min="0" max="255" value="150" onchange="sendVal('B', this.value)"><br>
+    <!-- НАСТРОЙКИ ЯРКОСТИ И МИКРОФОНА -->
+    <div class="section">
+        <h3>Настройки параметров</h3>
+        
+        <div class="control-row">
+            <label>Яркость: <span id="brightVal">150</span></label>
+            <div class="btn-group">
+                <button class="ctrl-btn" onclick="adjBright(-25)">-</button>
+                <button class="ctrl-btn" onclick="adjBright(+25)">+</button>
+            </div>
+        </div>
 
-        <label>Чувствительность микрофона:</label><br>
-        <input type="range" min="1" max="100" value="50" onchange="sendVal('G', this.value)"><br>
+        <div class="control-row">
+            <label>Чувствительность: <span id="sensVal">50</span></label>
+            <div class="btn-group">
+                <button class="ctrl-btn" onclick="adjSens(-10)">-</button>
+                <button class="ctrl-btn" onclick="adjSens(+10)">+</button>
+            </div>
+        </div>
 
-        <label>Палитра цветов:</label><br>
-        <select onchange="sendVal('P', this.value)">
-            <option value="0">Радуга</option>
-            <option value="1">Полосатая Радуга</option>
-            <option value="2">Океан</option>
-            <option value="3">Облака</option>
-            <option value="4">Лава</option>
-            <option value="5">Вечеринка</option>
-        </select>
+        <div style="margin-top: 15px;">
+            <label style="display:block; margin-bottom:8px; font-size:14px;">Палитра цветов:</label>
+            <select onchange="sendVal('P', this.value)">
+                <option value="0">Радуга (Rainbow)</option>
+                <option value="1">Полосатая радуга</option>
+                <option value="2">Океан (Ocean)</option>
+                <option value="3">Облака (Cloud)</option>
+                <option value="4">Лава (Lava)</option>
+                <option value="5">Вечеринка (Party)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- МУЗЫКАЛЬНЫЕ РЕЖИМЫ (10 шт) -->
+    <div class="section">
+        <h3>🎵 Музыкальные режимы (0 - 9)</h3>
+        <div class="grid">
+            <button class="mode-btn m-btn active" onclick="selectMode(0)">1. Пик-Индикатор</button>
+            <button class="mode-btn m-btn" onclick="selectMode(1)">2. VU от Центра</button>
+            <button class="mode-btn m-btn" onclick="selectMode(2)">3. Пульсация</button>
+            <button class="mode-btn m-btn" onclick="selectMode(3)">4. Бегущая Волна</button>
+            <button class="mode-btn m-btn" onclick="selectMode(4)">5. Стробоскоп</button>
+            <button class="mode-btn m-btn" onclick="selectMode(5)">6. Огонь под музыку</button>
+            <button class="mode-btn m-btn" onclick="selectMode(6)">7. С двух концов</button>
+            <button class="mode-btn m-btn" onclick="selectMode(7)">8. Вспышки</button>
+            <button class="mode-btn m-btn" onclick="selectMode(8)">9. Частотные точки</button>
+            <button class="mode-btn m-btn" onclick="selectMode(9)">10. Плавная волна</button>
+        </div>
+    </div>
+
+    <!-- ОБЫЧНЫЕ РЕЖИМЫ (20 шт) -->
+    <div class="section">
+        <h3>✨ Обычные режимы и Статика (10 - 29)</h3>
+        <div class="grid">
+            <button class="mode-btn m-btn" onclick="selectMode(10)">11. Красный</button>
+            <button class="mode-btn m-btn" onclick="selectMode(11)">12. Зеленый</button>
+            <button class="mode-btn m-btn" onclick="selectMode(12)">13. Синий</button>
+            <button class="mode-btn m-btn" onclick="selectMode(13)">14. Теплый Белый</button>
+            <button class="mode-btn m-btn" onclick="selectMode(14)">15. Радуга</button>
+            <button class="mode-btn m-btn" onclick="selectMode(15)">16. Дыхание</button>
+            <button class="mode-btn m-btn" onclick="selectMode(16)">17. Огонь</button>
+            <button class="mode-btn m-btn" onclick="selectMode(17)">18. Плазма</button>
+            <button class="mode-btn m-btn" onclick="selectMode(18)">19. Метеор</button>
+            <button class="mode-btn m-btn" onclick="selectMode(19)">20. Бегущий Блик</button>
+            <button class="mode-btn m-btn" onclick="selectMode(20)">21. Конфетти</button>
+            <button class="mode-btn m-btn" onclick="selectMode(21)">22. Бегущие точки</button>
+            <button class="mode-btn m-btn" onclick="selectMode(22)">23. Градиент</button>
+            <button class="mode-btn m-btn" onclick="selectMode(23)">24. Звезды</button>
+            <button class="mode-btn m-btn" onclick="selectMode(24)">25. Волны</button>
+            <button class="mode-btn m-btn" onclick="selectMode(25)">26. Двухцветный</button>
+            <button class="mode-btn m-btn" onclick="selectMode(26)">27. Рыцарь дорог</button>
+            <button class="mode-btn m-btn" onclick="selectMode(27)">28. Лава-лампа</button>
+            <button class="mode-btn m-btn" onclick="selectMode(28)">29. Зебра</button>
+            <button class="mode-btn m-btn" onclick="selectMode(29)">30. Плавный цвет</button>
+        </div>
     </div>
 
 <script>
     const SERVICE_UUID = "4fa85f64-5715-4570-b02d-00986e314a6c";
     const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
     let bleCharacteristic = null;
+
+    let currentBrightness = 150;
+    let currentSensitivity = 50;
 
     async function connectBLE() {
         try {
@@ -62,19 +247,61 @@
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService(SERVICE_UUID);
             bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
-            document.getElementById('status').innerText = "Статус: Подключено!";
+            
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = "Статус: Подключено!";
+            statusEl.classList.add('connected');
         } catch (error) {
             console.log(error);
-            alert("Ошибка подключения по BLE: " + error);
+            alert("Ошибка подключения: " + error);
         }
     }
 
     async function sendVal(prefix, val) {
-        if (prefix === 'M') document.getElementById('modeNum').innerText = val;
         if (bleCharacteristic) {
-            const data = new TextEncoder().encode(`${prefix}:${val}`);
-            await bleCharacteristic.writeValue(data);
+            try {
+                const data = new TextEncoder().encode(`${prefix}:${val}`);
+                await bleCharacteristic.writeValue(data);
+            } catch (e) {
+                console.error("Ошибка отправки:", e);
+            }
         }
+    }
+
+    function selectMode(modeIdx) {
+        const btns = document.querySelectorAll('.m-btn');
+        btns.forEach((btn, idx) => {
+            if (idx === modeIdx) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        sendVal('M', modeIdx);
+    }
+
+    function selectSubmode(subIdx) {
+        const btns = document.querySelectorAll('.sub-btn');
+        btns.forEach((btn, idx) => {
+            if (idx === subIdx) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        sendVal('S', subIdx);
+    }
+
+    function adjBright(delta) {
+        currentBrightness = Math.max(0, Math.min(255, currentBrightness + delta));
+        document.getElementById('brightVal').innerText = currentBrightness;
+        sendVal('B', currentBrightness);
+    }
+
+    function adjSens(delta) {
+        currentSensitivity = Math.max(1, Math.min(100, currentSensitivity + delta));
+        document.getElementById('sensVal').innerText = currentSensitivity;
+        sendVal('G', currentSensitivity);
     }
 </script>
 </body>
