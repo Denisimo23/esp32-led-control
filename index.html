@@ -1,220 +1,367 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление Потолком ESP32-S3</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121216; color: #eee; padding: 15px; max-width: 800px; margin: 0 auto; }
-        h1 { text-align: center; margin-bottom: 15px; font-size: 22px; }
-        .main-btn { background: #007bff; color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; width: 100%; margin-bottom: 15px; }
-        #status { text-align: center; font-weight: bold; margin-bottom: 15px; color: #ff5555; }
-        #status.connected { color: #00ff88; }
-        .section { background: #1c1c24; padding: 15px; margin-bottom: 15px; border-radius: 12px; }
-        .section h3 { border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 12px; font-size: 14px; color: #888; text-transform: uppercase; }
-        
-        /* Ползунки */
-        .slider-group { margin-bottom: 12px; }
-        .slider-group label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
-        input[type=range] { width: 100%; height: 6px; border-radius: 3px; background: #333; outline: none; -webkit-appearance: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #007bff; cursor: pointer; }
-
-        /* Кнопки режимов */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-        .mode-btn { background: #282836; color: #ccc; border: 1px solid #3a3a4d; padding: 10px 5px; border-radius: 8px; font-size: 12px; cursor: pointer; text-align: center; }
-        .mode-btn.active { background: #007bff; color: #fff; font-weight: bold; border-color: #0056b3; }
-
-        /* Конструктор цвета */
-        .color-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-        .color-item { display: flex; align-items: center; background: #2a2a38; padding: 4px 8px; border-radius: 6px; }
-        .color-item input[type=color] { border: none; width: 28px; height: 28px; border-radius: 4px; background: none; cursor: pointer; }
-        .color-item .remove-btn { background: #ff4444; color: white; border: none; width: 20px; height: 20px; border-radius: 50%; margin-left: 6px; cursor: pointer; font-size: 12px; }
-        .add-color-btn { background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-        select { width: 100%; padding: 10px; background: #282836; color: #fff; border: 1px solid #3a3a4d; border-radius: 8px; margin-bottom: 10px; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEON LIGHT — управление лентой</title>
+<style>
+:root{
+  --bg:#0a0d14; --card:rgba(255,255,255,.045); --line:rgba(255,255,255,.09);
+  --acc:#00ffc8; --acc2:#ff2d78; --txt:#e8ecf4; --mut:#8b93a7;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(255,45,120,.14), transparent 60%),
+    radial-gradient(800px 500px at -10% 20%, rgba(0,255,200,.10), transparent 60%),
+    var(--bg);
+  color:var(--txt); min-height:100vh; padding-bottom:24px;
+}
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px 8px;position:sticky;top:0;z-index:5;
+  background:linear-gradient(rgba(10,13,20,.92),rgba(10,13,20,.75));
+  backdrop-filter:blur(8px);
+}
+.logo{font-weight:800;font-size:19px;letter-spacing:2px;display:flex;align-items:center;gap:9px}
+.logo em{color:var(--acc);font-style:normal}
+.dot{width:11px;height:11px;border-radius:50%;background:#555;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
+.dot.on{background:var(--acc);box-shadow:0 0 12px var(--acc);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.55}}
+button{
+  font:inherit;color:var(--txt);background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:9px 14px;cursor:pointer;transition:.18s;
+}
+button:active{transform:scale(.96)}
+.btn-conn{background:linear-gradient(135deg,var(--acc),#00c8ff);color:#04121c;font-weight:700;border:none;box-shadow:0 4px 22px rgba(0,255,200,.25)}
+.btn-conn.off{background:var(--card);color:var(--txt);border:1px solid var(--line);box-shadow:none}
+.wrap{max-width:560px;margin:0 auto;padding:0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px;backdrop-filter:blur(6px)}
+.vu-wrap{display:flex;align-items:center;gap:10px;margin-top:12px}
+.vu-track{flex:1;height:14px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid var(--line)}
+#vuBar{height:100%;width:0%;border-radius:8px;background:linear-gradient(90deg,#00ffc8,#ffe600 55%,#ff2d55);transition:width .07s linear}
+.beat{width:26px;height:26px;border-radius:50%;flex:none;background:radial-gradient(circle,#ff5d7e,#a3002f);opacity:.25;transform:scale(.85);transition:.08s}
+.beat.hit{opacity:1;transform:scale(1.35);box-shadow:0 0 18px #ff2d55}
+.tabs{display:flex;gap:8px;margin-top:16px}
+.tab{flex:1;text-align:center;padding:10px 4px;border-radius:12px;font-size:14px;font-weight:600;color:var(--mut);background:transparent;border:1px solid transparent}
+.tab.act{color:#04121c;background:linear-gradient(135deg,var(--acc),#00d9ff);border:none;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:9px}
+.mode-btn{text-align:left;padding:10px;border-radius:14px;line-height:1.25;background:rgba(255,255,255,.03);min-height:64px}
+.mode-btn .num{display:inline-block;width:22px;height:22px;border-radius:7px;text-align:center;line-height:22px;font-size:12px;font-weight:800;background:rgba(255,255,255,.08);margin-bottom:5px;color:var(--mut)}
+.mode-btn .nm{font-size:12.5px;color:var(--mut);font-weight:600;display:block}
+.mode-btn.act{background:linear-gradient(150deg,rgba(0,255,200,.16),rgba(0,150,255,.12));border-color:var(--acc);box-shadow:0 0 16px rgba(0,255,200,.18) inset}
+.mode-btn.act .nm,.mode-btn.act .num{color:var(--acc)}
+.sec-title{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;margin:2px 0 10px}
+.subrow{display:flex;align-items:center;gap:8px;margin-top:12px}
+.subrow span{color:var(--mut);font-size:13px;margin-right:auto}
+.subbtn{width:44px;height:36px;border-radius:11px;font-weight:700;background:rgba(255,255,255,.04)}
+.subbtn.act{background:var(--acc2);border:none;color:#fff;box-shadow:0 0 14px rgba(255,45,120,.45)}
+.ctl{margin-top:16px}.ctl:first-child{margin-top:2px}
+.ctl-h{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px}
+.ctl-h b{color:var(--acc);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;width:100%;height:30px;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:linear-gradient(90deg,var(--acc) var(--p,50%),rgba(255,255,255,.09) var(--p,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:5px solid var(--acc);margin-top:-7px;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+.row2{display:flex;gap:12px;align-items:center;margin-top:16px}
+.row2 label{flex:1;color:var(--mut);font-size:14px}
+input[type=number]{font:inherit;width:90px;padding:8px;border-radius:10px;color:var(--txt);background:rgba(255,255,255,.05);border:1px solid var(--line);text-align:center}
+.wide{width:100%;padding:12px;font-weight:700;font-size:15px;margin-top:14px}
+.danger{border-color:rgba(255,45,120,.5);color:#ff8aa8}
+.nf-line{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-top:10px}
+.nf-line b{color:var(--txt)}
+.color-row{display:flex;align-items:center;gap:12px}
+input[type=color]{width:74px;height:52px;border:none;border-radius:14px;background:none;cursor:pointer;padding:0}
+.swatches{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.sw{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.18);cursor:pointer}
+.sw.act{border-color:#fff;box-shadow:0 0 10px currentColor}
+.hint{font-size:12.5px;color:var(--mut);line-height:1.55;margin-top:10px}
+.status{text-align:center;color:var(--mut);font-size:12.5px;margin-top:18px}
+.overlay{position:fixed;inset:0;background:rgba(5,7,12,.86);z-index:20;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;backdrop-filter:blur(4px)}
+.overlay.show{display:flex}
+.ring{width:70px;height:70px;border-radius:50%;border:5px solid rgba(0,255,200,.15);border-top-color:var(--acc);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.overlay p{font-size:16px;font-weight:600}
+.overlay small{color:var(--mut)}
+.banner{margin-top:12px;padding:11px 14px;border-radius:12px;font-size:13px;line-height:1.5;background:rgba(255,180,0,.1);border:1px solid rgba(255,180,0,.35);color:#ffd27a;display:none}
+.hidden{display:none!important}
+</style>
 </head>
 <body>
+<header>
+  <div class="logo"><span class="dot" id="stDot"></span>NEON<em>LIGHT</em></div>
+  <button class="btn-conn off" id="btnConn">Подключить</button>
+</header>
 
-    <h1>Управление Потолком</h1>
-    <button class="main-btn" onclick="connectBLE()">Подключиться по BLE</button>
-    <div id="status">Статус: Отключено</div>
+<div class="wrap">
+  <div class="banner" id="bleBanner">
+    Браузер не поддерживает Web Bluetooth. Откройте страницу в Chrome (Android/ПК)
+    или в приложении Bluefy (iOS).
+  </div>
 
-    <!-- ПОЛЗУНКИ НАСТРОЕК -->
-    <div class="section">
-        <h3>Параметры и Плавность</h3>
-        
-        <div class="slider-group">
-            <label>Яркость: <span id="valB">150</span></label>
-            <input type="range" min="0" max="255" value="150" oninput="updateVal('B', this.value, 'valB')">
-        </div>
+  <div class="vu-wrap">
+    <div class="vu-track"><div id="vuBar"></div></div>
+    <div class="beat" id="beatDot"></div>
+  </div>
 
-        <div class="slider-group">
-            <label>Чувствительность микрофона: <span id="valG">50</span></label>
-            <input type="range" min="0" max="100" value="50" oninput="updateVal('G', this.value, 'valG')">
-        </div>
+  <div class="tabs">
+    <button class="tab act" data-t="music">Музыка</button>
+    <button class="tab" data-t="static">Сценарии</button>
+    <button class="tab" data-t="set">Настройки</button>
+    <button class="tab" data-t="col">Цвет</button>
+  </div>
 
-        <div class="slider-group">
-            <label>Скорость / Плавность эффектов: <span id="valV">50</span></label>
-            <input type="range" min="1" max="100" value="50" oninput="updateVal('V', this.value, 'valV')">
-        </div>
+  <section id="sec-music" class="card">
+    <div class="sec-title">Режимы под музыку · 15</div>
+    <div class="grid" id="gridMusic"></div>
+    <div class="subrow"><span>Подрежим</span><button class="subbtn act" data-s="0">1</button><button class="subbtn" data-s="1">2</button><button class="subbtn" data-s="2">3</button></div>
+  </section>
 
-        <div class="slider-group">
-            <label>Сглаживание шума / Аудио: <span id="valF">50</span></label>
-            <input type="range" min="0" max="100" value="50" oninput="updateVal('F', this.value, 'valF')">
-        </div>
+  <section id="sec-static" class="card hidden">
+    <div class="sec-title">Сценарии без музыки · 15</div>
+    <div class="grid" id="gridStatic"></div>
+    <div class="subrow subStatic"><span>Подрежим</span><button class="subbtn act" data-s="0">1</button><button class="subbtn" data-s="1">2</button><button class="subbtn" data-s="2">3</button></div>
+  </section>
+
+  <section id="sec-set" class="card hidden">
+    <div class="ctl">
+      <div class="ctl-h"><span>Яркость</span><b id="vBri"></b></div>
+      <input type="range" id="sBri" min="0" max="255">
     </div>
-
-    <!-- КАСТОМНАЯ ПАЛИТРА -->
-    <div class="section">
-        <h3>Настройка Палитры</h3>
-        <select onchange="sendVal('P', this.value)">
-            <option value="0">Встроенная: Радуга</option>
-            <option value="1">Встроенная: Полосы</option>
-            <option value="2">Встроенная: Океан</option>
-            <option value="3">Встроенная: Облака</option>
-            <option value="4">Встроенная: Лава</option>
-            <option value="5">Встроенная: Вечеринка</option>
-            <option value="255" selected>Кастомная палитра</option>
-        </select>
-
-        <label style="font-size: 13px; color: #aaa; margin-bottom: 8px; display: block;">Свой набор цветов:</label>
-        <div class="color-list" id="colorList"></div>
-        <button class="add-color-btn" onclick="addColor('#ff0000')">+ Добавить цвет</button>
+    <div class="ctl">
+      <div class="ctl-h"><span>Чувствительность микрофона</span><b id="vSen"></b></div>
+      <input type="range" id="sSen" min="0" max="255">
     </div>
-
-    <!-- ВАРИАЦИИ -->
-    <div class="section">
-        <h3>Вариации режимов (Подрежимы)</h3>
-        <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
-            <button class="mode-btn sub-btn active" onclick="setSub(0)">Вариант 1</button>
-            <button class="mode-btn sub-btn" onclick="setSub(1)">Вариант 2</button>
-            <button class="mode-btn sub-btn" onclick="setSub(2)">Вариант 3</button>
-        </div>
+    <div class="ctl">
+      <div class="ctl-h"><span>Скорость анимаций</span><b id="vSpd"></b></div>
+      <input type="range" id="sSpd" min="0" max="255">
     </div>
-
-    <!-- РЕЖИМЫ -->
-    <div class="section">
-        <h3>🎵 Музыкальные Режимы (0-9)</h3>
-        <div class="grid" id="musicModes"></div>
+    <div class="ctl">
+      <div class="ctl-h"><span>Плавность анимаций</span><b id="vSmt"></b></div>
+      <input type="range" id="sSmt" min="0" max="255">
     </div>
-
-    <div class="section">
-        <h3>✨ Статические и Динамические Режимы (10-29)</h3>
-        <div class="grid" id="staticModes"></div>
+    <div class="ctl">
+      <div class="ctl-h"><span>Сглаживание звука</span><b id="vAsm"></b></div>
+      <input type="range" id="sAsm" min="0" max="255">
     </div>
+    <div class="row2"><label>Светодиодов на ленте</label><input type="number" id="iLed" min="1" max="300" value="60"></div>
+    <button class="wide danger" id="btnCal">Калибровать тишину</button>
+    <div class="nf-line"><span>Порог шума (noise floor)</span><b id="nfVal">—</b></div>
+    <p class="hint">Калибровка запоминает уровень фонового шума, чтобы в тишине лента не светилась. Повторяйте её, если поменяли место или громкость музыки.</p>
+  </section>
+
+  <section id="sec-col" class="card hidden">
+    <div class="sec-title">Базовый цвет</div>
+    <div class="color-row">
+      <input type="color" id="colPick" value="#ff3c14">
+      <div class="hint">Используется в режимах: Цвет, VU, Пульс, Строб, Театр и др.</div>
+    </div>
+    <div class="swatches" id="swatches"></div>
+  </section>
+
+  <p class="status" id="stLine">Не подключено</p>
+</div>
+
+<div class="overlay" id="calOverlay">
+  <div class="ring"></div>
+  <p>Калибровка тишины…</p>
+  <small>Соблюдайте тишину рядом с микрофоном (~2 сек)</small>
+</div>
 
 <script>
-    const SERVICE_UUID = "4fa85f64-5715-4570-b02d-00986e314a6c";
-    const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-    let bleChar = null;
+const NUS = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const UUID_RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+const UUID_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
-    let userColors = ['#ff0000', '#00ff00', '#0000ff'];
+const MUSIC_NAMES = ['Спектр-волна','VU-метр','Пульс','Радуга','Бас-удар','Конфетти','Синус-волна','Строб','Градиент','Огонь','Метеор','Звёзды','Карусель','Змейка','Молния'];
+const STATIC_NAMES = ['Цвет','Радуга','Дыхание','Комета','Конфетти','Огонь','Океан','Звёзды','Мячики','Бегущие огни','Театр','Сканер','Плазма','Шум','Искры'];
 
-    const musicNames = ["1. Пик-Индикатор", "2. VU Центр", "3. Пульсация", "4. Бегущая волна", "5. Стробоскоп", "6. Огонь под звук", "7. С краев", "8. Вспышки", "9. Бегущая точка", "10. Спектрометр"];
-    const staticNames = ["11. Статика Цвет", "12. Статика Градиент", "13. Теплый свет", "14. Бегущая палитра", "15. Дыхание", "16. Огонь", "17. Плазма", "18. Комета", "19. Блики", "20. Конфетти", "21. Бегущие точки", "22. Смещение", "23. Звезды", "24. Синус волны", "25. Двухцветный", "26. Рыцарь дорог", "27. Лава-лампа", "28. Чередование", "29. Смена цвета", "30. Импульсы"];
+let chrRx = null, device = null, connected = false;
+let state = {mode:0, sub:0, bri:160, sen:128, spd:128, smt:96, asm:128, led:60, nf:0};
 
-    function initUI() {
-        const mContainer = document.getElementById('musicModes');
-        musicNames.forEach((name, idx) => {
-            mContainer.innerHTML += `<button class="mode-btn m-btn ${idx===0?'active':''}" onclick="setMode(${idx})">${name}</button>`;
-        });
+const $ = id => document.getElementById(id);
+const btnConn = $('btnConn');
 
-        const sContainer = document.getElementById('staticModes');
-        staticNames.forEach((name, idx) => {
-            sContainer.innerHTML += `<button class="mode-btn m-btn" onclick="setMode(${idx+10})">${name}</button>`;
-        });
+if (!navigator.bluetooth) $('bleBanner').style.display = 'block';
 
-        renderColors();
-    }
+function buildGrid(gridId, names, baseIdx) {
+  const g = $(gridId);
+  names.forEach((n, i) => {
+    const b = document.createElement('button');
+    b.className = 'mode-btn';
+    b.innerHTML = '<span class="num">' + (i + 1) + '</span><span class="nm">' + n + '</span>';
+    b.dataset.m = baseIdx + i;
+    b.onclick = () => { send('MODE ' + (baseIdx + i)); setModeUI(baseIdx + i); };
+    g.appendChild(b);
+  });
+}
+buildGrid('gridMusic', MUSIC_NAMES, 0);
+buildGrid('gridStatic', STATIC_NAMES, 15);
 
-    async function connectBLE() {
-        try {
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ name: 'ESP32_Ceiling_Light' }],
-                optionalServices: [SERVICE_UUID]
-            });
-            const server = await device.gatt.connect();
-            const service = await server.getPrimaryService(SERVICE_UUID);
-            bleChar = await service.getCharacteristic(CHARACTERISTIC_UUID);
-            
-            document.getElementById('status').innerText = "Статус: Подключено!";
-            document.getElementById('status').classList.add('connected');
-            sendCustomColors();
-        } catch (e) {
-            alert("Ошибка BLE: " + e);
-        }
-    }
+function setModeUI(m) {
+  state.mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('act', +b.dataset.m === m));
+  const isMusic = m < 15;
+  switchTab(isMusic ? 'music' : 'static', true);
+}
 
-    async function sendVal(prefix, val) {
-        if (bleChar) {
-            try {
-                await bleChar.writeValue(new TextEncoder().encode(`${prefix}:${val}`));
-            } catch(e) { console.error(e); }
-        }
-    }
+document.querySelectorAll('.subbtn').forEach(b => {
+  b.onclick = () => { send('SUB ' + b.dataset.s); setSubUI(+b.dataset.s); };
+});
+function setSubUI(s) {
+  state.sub = s;
+  document.querySelectorAll('.subbtn').forEach(b => b.classList.toggle('act', +b.dataset.s === s));
+}
 
-    function updateVal(prefix, val, labelId) {
-        document.getElementById(labelId).innerText = val;
-        sendVal(prefix, val);
-    }
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => switchTab(t.dataset.t);
+});
+function switchTab(name, silent) {
+  if (!silent) {
+    if (name === 'music' && state.mode >= 15) { send('MODE 0'); setModeUI(0); }
+    if (name === 'static' && state.mode < 15) { send('MODE 15'); setModeUI(15); }
+  }
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('act', t.dataset.t === name));
+  ['music','static','set','col'].forEach(n => $('sec-' + n).classList.toggle('hidden', n !== name));
+}
 
-    function setMode(idx) {
-        document.querySelectorAll('.m-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
-        sendVal('M', idx);
-    }
+function paintSlider(el) {
+  const p = (el.value - el.min) / (el.max - el.min) * 100;
+  el.style.setProperty('--p', p + '%');
+}
+function bindSlider(id, lblId, key, cmd) {
+  const el = $(id), lbl = $(lblId);
+  el.addEventListener('input', () => {
+    lbl.textContent = el.value;
+    paintSlider(el);
+    throttledSend(cmd, el.value);
+    state[key] = +el.value;
+  });
+}
+bindSlider('sBri','vBri','bri','BRI');
+bindSlider('sSen','vSen','sen','SEN');
+bindSlider('sSpd','vSpd','spd','SPD');
+bindSlider('sSmt','vSmt','smt','SMT');
+bindSlider('sAsm','vAsm','asm','ASM');
 
-    function setSub(idx) {
-        document.querySelectorAll('.sub-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
-        sendVal('S', idx);
-    }
+$('iLed').addEventListener('change', e => {
+  let v = Math.max(1, Math.min(300, +e.target.value || 60));
+  e.target.value = v; state.led = v;
+  send('LED ' + v);
+});
 
-    function renderColors() {
-        const list = document.getElementById('colorList');
-        list.innerHTML = '';
-        userColors.forEach((hex, idx) => {
-            list.innerHTML += `
-                <div class="color-item">
-                    <input type="color" value="${hex}" onchange="changeColor(${idx}, this.value)">
-                    ${userColors.length > 1 ? `<button class="remove-btn" onclick="removeColor(${idx})">×</button>` : ''}
-                </div>
-            `;
-        });
-    }
+let sendTimers = {};
+function throttledSend(cmd, val) {
+  clearTimeout(sendTimers[cmd]);
+  sendTimers[cmd] = setTimeout(() => send(cmd + ' ' + val), 120);
+}
 
-    function addColor(hex) {
-        if(userColors.length < 16) {
-            userColors.push(hex);
-            renderColors();
-            sendCustomColors();
-        }
-    }
+function applyState(p) {
+  Object.assign(state, p);
+  const map = [['bri','sBri','vBri'],['sen','sSen','vSen'],['spd','sSpd','vSpd'],['smt','sSmt','vSmt'],['asm','sAsm','vAsm']];
+  map.forEach(([k, sid, vid]) => { $(sid).value = state[k]; $(vid).textContent = state[k]; paintSlider($(sid)); });
+  $('iLed').value = state.led;
+  $('nfVal').textContent = state.nf;
+  setModeUI(state.mode);
+  setSubUI(state.sub);
+}
 
-    function removeColor(idx) {
-        if(userColors.length > 1) {
-            userColors.splice(idx, 1);
-            renderColors();
-            sendCustomColors();
-        }
-    }
+async function connect() {
+  if (connected) { device && device.gatt.disconnect(); return; }
+  try {
+    $('stLine').textContent = 'Поиск устройства…';
+    device = await navigator.bluetooth.requestDevice({ filters: [{ services: [NUS] }] });
+    const gatt = await device.gatt.connect();
+    const svc = await gatt.getPrimaryService(NUS);
+    chrRx = await svc.getCharacteristic(UUID_RX);
+    const chrTx = await svc.getCharacteristic(UUID_TX);
+    await chrTx.startNotifications();
+    chrTx.addEventListener('characteristicvaluechanged', e => {
+      const txt = new TextDecoder().decode(e.target.value);
+      txt.split('\n').forEach(handleLine);
+    });
+    device.addEventListener('gattserverdisconnected', onDisconnect);
+    connected = true;
+    btnConn.textContent = 'Отключить';
+    btnConn.classList.remove('off');
+    $('stDot').classList.add('on');
+    $('stLine').textContent = 'Подключено · ' + (device.name || 'NEON-LIGHT');
+    send('GET');
+  } catch (err) {
+    connected = false;
+    $('stLine').textContent = err.message.includes('cancel') ? 'Не подключено' : 'Ошибка: ' + err.message;
+  }
+}
+function onDisconnect() {
+  connected = false; chrRx = null;
+  btnConn.textContent = 'Подключить';
+  btnConn.classList.add('off');
+  $('stDot').classList.remove('on');
+  $('stLine').textContent = 'Не подключено';
+}
+btnConn.onclick = connect;
 
-    function changeColor(idx, hex) {
-        userColors[idx] = hex;
-        sendCustomColors();
-    }
+function send(s) {
+  if (chrRx && connected) chrRx.writeValue(new TextEncoder().encode(s + '\n'));
+}
 
-    function sendCustomColors() {
-        let payload = userColors.map(hex => {
-            let r = parseInt(hex.substring(1,3), 16);
-            let g = parseInt(hex.substring(3,5), 16);
-            let b = parseInt(hex.substring(5,7), 16);
-            return `${r},${g},${b}`;
-        }).join(';');
-        
-        sendVal('C', payload);
-    }
+function handleLine(line) {
+  line = line.trim();
+  if (!line) return;
+  const p = line.split(/\s+/);
+  if (p[0] === 'ST') {
+    applyState({ mode:+p[1], sub:+p[2], bri:+p[3], sen:+p[4], spd:+p[5], smt:+p[6], asm:+p[7], led:+p[8], nf:+p[9] });
+    const hex = '#' + [p[10],p[11],p[12]].map(x => (+x).toString(16).padStart(2,'0')).join('');
+    $('colPick').value = /^#[0-9a-f]{6}$/.test(hex) ? hex : '#ff3c14';
+    syncSwatch();
+  } else if (p[0] === 'VL') {
+    $('vuBar').style.width = Math.min(100, +p[1]) + '%';
+    $('beatDot').classList.toggle('hit', p[2] === '1');
+  } else if (p[0] === 'CALK') {
+    hideCal(+p[1]);
+  } else if (p[0] === 'CALSTART') {
+    showCal();
+  }
+}
 
-    initUI();
+let calTimer = null;
+function showCal() {
+  $('calOverlay').classList.add('show');
+  clearTimeout(calTimer);
+  calTimer = setTimeout(hideCal, 3500);
+}
+function hideCal(nf) {
+  $('calOverlay').classList.remove('show');
+  clearTimeout(calTimer);
+  if (nf) $('nfVal').textContent = nf;
+}
+$('btnCal').onclick = () => { if (connected) send('CAL'); };
+
+const SWATCHES = ['#ff2200','#ff8800','#ffee00','#22dd44','#00ccff','#2244ff','#aa22ff','#ff2299','#ffffff'];
+const swBox = $('swatches');
+SWATCHES.forEach(c => {
+  const d = document.createElement('div');
+  d.className = 'sw'; d.style.background = c; d.style.color = c; d.dataset.c = c;
+  d.onclick = () => { $('colPick').value = c; applyColor(); };
+  swBox.appendChild(d);
+});
+function syncSwatch() {
+  const cur = $('colPick').value.toLowerCase();
+  document.querySelectorAll('.sw').forEach(d => d.classList.toggle('act', d.dataset.c === cur));
+}
+function rgbFromHex(h) {
+  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+}
+function applyColor() {
+  const [r,g,b] = rgbFromHex($('colPick').value);
+  send('COL ' + r + ' ' + g + ' ' + b);
+  syncSwatch();
+}
+$('colPick').addEventListener('change', applyColor);
+syncSwatch();
+
+paintSlider($('sBri')); paintSlider($('sSen')); paintSlider($('sSpd'));
+paintSlider($('sSmt')); paintSlider($('sAsm'));
 </script>
 </body>
 </html>
