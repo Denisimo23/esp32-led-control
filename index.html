@@ -278,7 +278,10 @@ async function connect() {
   if (connected) { device && device.gatt.disconnect(); return; }
   try {
     $('stLine').textContent = 'Поиск устройства…';
-    device = await navigator.bluetooth.requestDevice({ filters: [{ services: [NUS] }] });
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: 'NEON' }, { services: [NUS] }],
+      optionalServices: [NUS]
+    });
     const gatt = await device.gatt.connect();
     const svc = await gatt.getPrimaryService(NUS);
     chrRx = await svc.getCharacteristic(UUID_RX);
