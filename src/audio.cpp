@@ -194,9 +194,6 @@ static void audioTask(void* arg) {
   static int32_t i2sBuffer[AUDIO_BLOCK];
 #endif
 
-  uint32_t nextSampleUs = micros();
-  const uint32_t samplePeriodUs = 1000000UL / AUDIO_SAMPLE_RATE;
-
   for (;;) {
     bool haveBlock = false;
 
@@ -220,26 +217,22 @@ static void audioTask(void* arg) {
 #endif
 
     if (!haveBlock) {
+      dc = dc * 0.9995f + 2048.0f * 0.0005f;
       for (uint16_t i = 0; i < AUDIO_BLOCK; i++) {
-        int32_t waitUs = (int32_t)(nextSampleUs - micros());
-        if (waitUs > 0) delayMicroseconds((uint32_t)waitUs);
-
         int raw = analogRead(MIC_PIN);
         dc = dc * 0.9995f + (float)raw * 0.0005f;
         int ac = raw - (int)dc;
         if (ac > 2047) ac = 2047;
         if (ac < -2048) ac = -2048;
         samples[i] = (int16_t)ac;
-
-        nextSampleUs += samplePeriodUs;
-        if ((int32_t)(micros() - nextSampleUs) > 2000) {
-          nextSampleUs = micros();
-        }
       }
     }
 
     processBlock(samples, AUDIO_BLOCK);
-    vTaskDelay(pdMS_TO_TICKS(0));
+
+    // Уступаем управление FreeRTOS, иначе задача заново получит CPU 0
+    // и сработает Task Watchdog (IDLE0 не получит время).
+    vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
 
