@@ -4,6 +4,8 @@
 
 #include "config.h"
 #include "state.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #if MIC_I2S
 #include <driver/i2s.h>
@@ -237,6 +239,7 @@ static void audioTask(void* arg) {
     }
 
     processBlock(samples, AUDIO_BLOCK);
+    vTaskDelay(pdMS_TO_TICKS(0));
   }
 }
 
